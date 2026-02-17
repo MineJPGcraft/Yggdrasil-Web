@@ -12,11 +12,12 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { register } from '../api.js';
+import { register, registerProfileAPI } from '../api.js';
 
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+const profileName = ref(''); // 新增：角色名
 const message = ref('');
 const isError = ref(false);
 const isLoading = ref(false);
@@ -26,7 +27,7 @@ const handleRegister = async () => {
   message.value = '';
   isError.value = false;
 
-  if (!email.value || !password.value || !confirmPassword.value) {
+  if (!email.value || !password.value || !confirmPassword.value || !profileName.value) { // 新增 profileName 验证
     message.value = '所有字段都是必填项。';
     isError.value = true;
     return;
@@ -44,14 +45,19 @@ const handleRegister = async () => {
       username: email.value,
       password: password.value,
     };
-    await register(userData);
-    message.value = '注册成功！正在跳转到登录页...';
+    await register(userData); // 先注册用户
+
+    // 用户注册成功后，使用用户提供的角色名注册角色
+    await registerProfileAPI(profileName.value, email.value, password.value); // 传入密码以防后端需要
+
+    message.value = '账户和角色创建成功！正在跳转到登录页...';
     isError.value = false;
     setTimeout(() => {
       router.push('/login');
     }, 2000);
   } catch (error) {
-    message.value = error.response?.data?.message || '注册失败。请重试。';
+    console.error('注册失败:', error);
+    message.value = error.response?.data?.errorMessage || error.message || '注册失败。请重试。';
     isError.value = true;
   } finally {
     isLoading.value = false;
@@ -67,13 +73,17 @@ const handleRegister = async () => {
           创建账户
         </CardTitle>
         <CardDescription>
-          输入您的邮箱和密码开始。
+          输入您的邮箱、密码和角色名开始。
         </CardDescription>
       </CardHeader>
       <CardContent class="grid gap-4">
         <div class="grid gap-2">
           <Label for="email">邮箱</Label>
           <Input id="email" v-model="email" type="email" placeholder="m@example.com" required />
+        </div>
+        <div class="grid gap-2">
+          <Label for="profile-name">角色名</Label>
+          <Input id="profile-name" v-model="profileName" type="text" placeholder="请输入您的角色名" required />
         </div>
         <div class="grid gap-2">
           <Label for="password">密码</Label>

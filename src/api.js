@@ -45,18 +45,17 @@ api.interceptors.response.use(
 
 
 export const loginAPI = async (username, password) => {
-    await api.post(
+    const res = await api.post(
         '/authserver/authenticate',
         {
             username: username,
             password: password,
             requestUser: true
         }
-    ).then((res) => {
-        if (res.data.code === 200){
-            localStorage.setItem("accessToken", res.data.accessToken);
-        }
-    });
+    );
+    // 根据 Yggdrasil 规范，成功的响应直接返回 accessToken，不包含 code 字段
+    localStorage.setItem("accessToken", res.data.accessToken);
+    return res; // 返回响应，以便上层调用者可以处理，例如获取用户信息
 };
 
 // 注册 API
@@ -65,6 +64,33 @@ export const register = async (userData) => {
         const response = await api.post('/extern/register/user', userData);
         return response.data;
     } catch (error) {
+        // 将错误重新抛出，以便调用方能够处理
+        throw error;
+    }
+};
 
+/**
+ * 注册角色 API (已废弃 - 客户端应避免使用)
+ * @param {string} profileName - 角色名
+ * @param {string} username - 要绑定的用户名 (通常是邮箱)
+ * @param {string} password - 要绑定的用户密码 (如果后端配置 profile-strict 为 true 则必须)
+ * @returns {Promise<any>}
+ */
+export const registerProfileAPI = async (profileName, username, password = '') => {
+    try {
+        const requestBody = {
+            profileName: profileName,
+            username: username,
+        };
+        // 只有当 password 非空时才添加到请求体
+        if (password) {
+            requestBody.password = password;
+        }
+
+        const response = await api.post('/extern/register/profile', requestBody);
+        return response.data;
+    } catch (error) {
+        console.error('注册角色失败:', error);
+        throw error; // 将错误重新抛出
     }
 };
