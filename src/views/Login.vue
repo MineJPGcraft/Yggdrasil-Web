@@ -1,63 +1,90 @@
-<template>
-  <div class="flex flex-col items-center justify-center min-h-100px">
-    <h2 class="text-4xl font-bold mb-5 text-gray-900">登 录</h2>
-    <form @submit.prevent="login" class="flex flex-col gap-4 w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-      <InputComponent
-          v-model="email"
-          type="email"
-          placeholder="请输入注册邮箱"
-          helpText="请输入注册时使用的有效邮箱地址"
-      />
-      <InputComponent
-          v-model="password"
-          type="password"
-          placeholder="请输入登录密码"
-          helpText="密码需包含大小写字母和数字，长度8-20位"
-      />
-      <ButtonComponent
-          type="submit"
-          label="登录"
-          @click="login"
-      />
-    </form>
-    <p v-if="errorMessage" class="text-red-500 font-bold mt-8 text-xl"> {{ errorMessage }} </p>
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue';
-import { loginAPI } from '../api.js'; // 确保导入的是新的 login 函数
-import InputComponent from '../components/Input.vue';
-import ButtonComponent from '../components/Button.vue';
-import router from "@/router/index.js";
-import logger from "../../public/util/logger.js";
+import { useRouter } from 'vue-router';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { loginAPI } from '../api.js';
 
 const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
+const router = useRouter();
 
-const login = async () => {
+const handleLogin = async () => {
   errorMessage.value = '';
-
   if (!email.value || !password.value) {
-    errorMessage.value = '请输入邮箱和密码';
+    errorMessage.value = '邮箱和密码都是必填项。';
     return;
   }
 
   try {
-    let response = await loginAPI(email.value, password.value);
-    logger.info('用户登录成功:', response);
-    errorMessage.value = '登录成功！';
-    // 这里可以添加跳转到主页的逻辑
-    await router.push('/login');
+    await loginAPI(email.value, password.value);
+    // The API automatically sets the token, so we just need to navigate.
+    // A small delay to allow potential storage events to fire if needed by other components.
+    setTimeout(() => {
+        router.push('/dashboard');
+    }, 100);
+
   } catch (error) {
-    errorMessage.value = error.message || '登录失败，请重试';
-    logger.error('用户登录失败:', error);
+    console.error('登录失败:', error);
+    errorMessage.value = error.response?.data?.message || '登录失败。请检查您的凭据并重试。';
   }
 };
-
 </script>
 
-<style scoped>
-
-</style>
+<template>
+  <div class="flex items-center justify-center min-h-screen bg-background">
+    <Card class="w-full max-w-sm">
+      <CardHeader class="text-center">
+        <CardTitle class="text-2xl">
+          登录
+        </CardTitle>
+        <CardDescription>
+          在下方输入您的邮箱以登录您的账户。
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <div class="grid gap-2">
+          <Label for="email">邮箱</Label>
+          <Input
+            id="email"
+            v-model="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+          />
+        </div>
+        <div class="grid gap-2">
+          <div class="flex items-center">
+            <Label for="password">密码</Label>
+            <router-link to="/reset-password" class="ml-auto inline-block text-sm underline">
+              忘记密码？
+            </router-link>
+          </div>
+          <Input id="password" v-model="password" type="password" required />
+        </div>
+        <div v-if="errorMessage" class="text-sm font-medium text-destructive">
+          {{ errorMessage }}
+        </div>
+        <Button type="submit" class="w-full" @click="handleLogin">
+          登录
+        </Button>
+      </CardContent>
+      <CardFooter class="text-center text-sm">
+        还没有账户？
+        <router-link to="/register" class="underline ml-1">
+          注册
+        </router-link>
+      </CardFooter>
+    </Card>
+  </div>
+</template>

@@ -1,33 +1,43 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import Home from '../views/Home.vue';
 import Login from '../views/Login.vue';
 import Register from "../views/register.vue";
+import ResetPassword from "../views/ResetPassword.vue";
 import Dashboard from "@/views/Dashboard.vue";
 
 const routes = [
     {
+        path: '/',
+        component: DefaultLayout,
+        children: [
+            {
+                path: '',
+                name: 'Home',
+                component: Home,
+            },
+            {
+                path: 'dashboard',
+                name: 'dashboard',
+                component: Dashboard,
+                meta: { requiresAuth: true }
+            }
+        ]
+    },
+    {
         path: '/login',
         name: 'login',
         component: Login,
-        meta: { showSidebar: false }
-    },
-    {
-        path: '/',
-        name: 'Home',
-        component: Home,
-        meta: { showSidebar: true }
     },
     {
         path: '/register',
         name: 'register',
         component: Register,
-        meta: { showSidebar: false }
     },
     {
-        path: '/dashboard',
-        name: 'dashboard',
-        component: Dashboard,
-        meta: { showSidebar: true }
+        path: '/reset-password',
+        name: 'reset-password',
+        component: ResetPassword,
     }
 ];
 
@@ -43,7 +53,7 @@ router.beforeEach((to, from, next) => {
     // 如果路由需要认证但用户未登录
     if (to.meta.requiresAuth && !token) {
         // 重定向到登录页面，并保存原始路径
-        next('/login');
+        next({ name: 'login', query: { redirect: to.fullPath } });
     }
     else {
         next(); // 继续导航

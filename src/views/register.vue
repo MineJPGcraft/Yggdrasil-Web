@@ -1,102 +1,101 @@
-<template>
-  <div class="flex flex-col items-center justify-center min-h-100px">
-    <h2 class="text-4xl font-bold mb-5">注 册</h2>
-    <form @submit.prevent="handleRegister" class="flex flex-col gap-4 w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-      <div>
-        <div class="flex">
-          <input v-model="emailPrefix" type="text" placeholder="请输入邮箱前缀" required
-                 class="p-3 border border-gray-300 rounded-l-md focus:outline-none focus:border-blue-500 w-full">
-          <select v-model="emailSuffix"
-                  class="p-3 border border-gray-300 border-l-0 rounded-r-md focus:outline-none focus:border-blue-500">
-            <option value="@redstarmc.top">@redstarmc.top</option>
-            <option value="@yahoo.com">@yahoo.com</option>
-            <option value="@hotmail.com">@hotmail.com</option>
-            <option value="@example.com">@example.com</option>
-          </select>
-        </div>
-        <p class="text-sm text-gray-500 mt-1">请输入有效的邮箱地址</p>
-      </div>
-      <div>
-        <Input
-            v-model="password"
-            type="password"
-            placeholder="请输入密码"
-            required
-            helpText="密码必须包含至少一个大写字母、一个小写字母和一个数字，且长度至少为 8 位"
-        />
-      </div>
-      <div>
-        <Input
-            v-model="confirmPassword"
-            type="password"
-            placeholder="请重复输入密码"
-            required
-            helpText="两次输入的密码需保持一致"
-        />
-      </div>
-      <Button type="submit" label="注册" :disabled="isLoading">
-        {{ isLoading ? '注册中...' : '注册' }}
-      </Button>
-    </form>
-    <p v-if="errorMessage" class="text-red-500 font-bold mt-10 text-2xl"> {{ errorMessage }}</p>
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { register } from '../api.js';
-import Input from '../components/Input.vue';
-import Button from '../components/Button.vue';
 
-const emailPrefix = ref('');
-const emailSuffix = ref('');
+const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
-const errorMessage = ref('');
+const message = ref('');
+const isError = ref(false);
 const isLoading = ref(false);
+const router = useRouter();
 
 const handleRegister = async () => {
-  errorMessage.value = '';
-  const email = emailPrefix.value + emailSuffix.value;
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(email)) {
-    errorMessage.value = '请输入有效的邮箱地址';
+  message.value = '';
+  isError.value = false;
+
+  if (!email.value || !password.value || !confirmPassword.value) {
+    message.value = '所有字段都是必填项。';
+    isError.value = true;
     return;
   }
 
   if (password.value !== confirmPassword.value) {
-    errorMessage.value = '两次输入的密码不一致，请重新输入';
+    message.value = '两次输入的密码不一致。';
+    isError.value = true;
     return;
   }
 
-  const userData = {
-    username: email.valueOf(),
-    password: password.value
-  };
-
   isLoading.value = true;
-
   try {
-    const response = await register(userData);
-    isLoading.value = false;
-    console.log('注册成功:', response);
-    emailPrefix.value = '';
-    emailSuffix.value = '';
-    password.value = '';
-    confirmPassword.value = '';
-    errorMessage.value = '注册成功！请登录。';
+    const userData = {
+      username: email.value,
+      password: password.value,
+    };
+    await register(userData);
+    message.value = '注册成功！正在跳转到登录页...';
+    isError.value = false;
+    setTimeout(() => {
+      router.push('/login');
+    }, 2000);
   } catch (error) {
+    message.value = error.response?.data?.message || '注册失败。请重试。';
+    isError.value = true;
+  } finally {
     isLoading.value = false;
-    errorMessage.value = error.message || '注册失败，请重试';
-    console.error('注册失败:', error);
   }
 };
 </script>
 
-<style scoped>
-/* 添加一些样式以提高表单的美观度 */
-input, select {
-  appearance: none;
-  -webkit-appearance: none;
-}
-</style>
+<template>
+  <div class="flex items-center justify-center min-h-screen bg-background">
+    <Card class="w-full max-w-sm">
+      <CardHeader class="text-center">
+        <CardTitle class="text-2xl">
+          创建账户
+        </CardTitle>
+        <CardDescription>
+          输入您的邮箱和密码开始。
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <div class="grid gap-2">
+          <Label for="email">邮箱</Label>
+          <Input id="email" v-model="email" type="email" placeholder="m@example.com" required />
+        </div>
+        <div class="grid gap-2">
+          <Label for="password">密码</Label>
+          <Input id="password" v-model="password" type="password" required />
+        </div>
+        <div class="grid gap-2">
+          <Label for="confirm-password">确认密码</Label>
+          <Input id="confirm-password" v-model="confirmPassword" type="password" required />
+        </div>
+        <div v-if="message" :class="['text-sm font-medium', isError ? 'text-destructive' : 'text-primary']">
+          {{ message }}
+        </div>
+        <Button type="submit" class="w-full" :disabled="isLoading" @click="handleRegister">
+          {{ isLoading ? '正在创建账户...' : '创建账户' }}
+        </Button>
+      </CardContent>
+      <CardFooter class="text-center text-sm">
+        已经有账户了？
+        <router-link to="/login" class="underline ml-1">
+          登录
+        </router-link>
+      </CardFooter>
+    </Card>
+  </div>
+</template>

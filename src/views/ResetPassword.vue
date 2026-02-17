@@ -1,51 +1,72 @@
-<template>
-  <div class="flex flex-col items-center justify-center min-h-100px">
-    <h2 class="text-4xl font-bold mb-5 text-gray-900">重置密码</h2>
-    <form @submit.prevent="reset" class="flex flex-col gap-4 w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-      <div>
-        <input v-model="oldPassword" type="password" placeholder="请输入旧密码" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-blue-200">
-        <p class="text-sm text-gray-500 mt-1">请输入当前使用的密码</p>
-      </div>
-      <div>
-        <input v-model="newPassword" type="password" placeholder="请输入新密码" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-blue-200">
-        <p class="text-sm text-gray-500 mt-1">密码需包含大小写字母和数字，长度8-20位</p>
-      </div>
-      <button
-          type="submit"
-          class="w-full p-3 bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >重置密码</button>
-    </form>
-    <p v-if="errorMessage" class="text-red-500 font-bold mt-8 text-xl"> {{ errorMessage }} </p>
-    <div v-if="successMessage" class="text-green-500 font-bold mt-8 text-xl">{{ successMessage }}</div>
-  </div>
-</template>
-
 <script setup>
 import { ref } from 'vue';
-import { resetPassword } from '../api.js';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-const oldPassword = ref('');
-const newPassword = ref('');
-const errorMessage = ref('');
-const successMessage = ref('');
+const email = ref('');
+const message = ref('');
+const isLoading = ref(false);
 
-const reset = async () => {
-  const userData = {
-    oldPassword: oldPassword.value,
-    newPassword: newPassword.value
-  };
-
-  try {
-    const response = await resetPassword(userData);
-    successMessage.value = '密码重置成功';
-    errorMessage.value = '';
-  } catch (error) {
-    errorMessage.value = '密码重置失败，请重试';
-    successMessage.value = '';
+const handleResetRequest = async () => {
+  message.value = '';
+  if (!email.value) {
+    message.value = '请输入您的邮箱地址。';
+    return;
   }
+
+  isLoading.value = true;
+  // Simulate API call
+  setTimeout(() => {
+    isLoading.value = false;
+    message.value = '如果该邮箱地址存在，一封密码重置链接已发送到您的邮箱。';
+  }, 1500);
 };
 </script>
 
-<style scoped>
-
-</style>
+<template>
+  <div class="flex items-center justify-center min-h-screen bg-background">
+    <Card class="w-full max-w-sm">
+      <CardHeader class="text-center">
+        <CardTitle class="text-2xl">
+          忘记密码
+        </CardTitle>
+        <CardDescription>
+          输入您的邮箱，我们将发送密码重置链接给您。
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <div class="grid gap-2">
+          <Label for="email">邮箱</Label>
+          <Input
+            id="email"
+            v-model="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+          />
+        </div>
+        <div v-if="message" class="text-sm font-medium text-primary">
+          {{ message }}
+        </div>
+        <Button type="submit" class="w-full" :disabled="isLoading" @click="handleResetRequest">
+          {{ isLoading ? '发送中...' : '发送重置链接' }}
+        </Button>
+      </CardContent>
+      <CardFooter class="text-center text-sm">
+        还记得密码？
+        <router-link to="/login" class="underline ml-1">
+          返回登录
+        </router-link>
+      </CardFooter>
+    </Card>
+  </div>
+</template>

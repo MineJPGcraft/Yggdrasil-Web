@@ -1,9 +1,8 @@
 /.idea
 /node_modules
 /dist
-
+yarn.lock
 package-lock.json
-
-
-
-
+/test
+.yarn/
+.yarnrc.yml
