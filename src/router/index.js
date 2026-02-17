@@ -5,6 +5,8 @@ import Login from '../views/Login.vue';
 import Register from "../views/register.vue";
 import ResetPassword from "../views/ResetPassword.vue";
 import Dashboard from "@/views/Dashboard.vue";
+import RoleManagement from "@/views/RoleManagement.vue";
+import UserProfile from "@/views/UserProfile.vue"; // 导入 UserProfile 组件
 
 const routes = [
     {
@@ -20,6 +22,18 @@ const routes = [
                 path: 'dashboard',
                 name: 'dashboard',
                 component: Dashboard,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'role-management', // 添加角色管理路由
+                name: 'role-management',
+                component: RoleManagement,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'profile', // 添加个人信息路由
+                name: 'user-profile',
+                component: UserProfile,
                 meta: { requiresAuth: true }
             }
         ]

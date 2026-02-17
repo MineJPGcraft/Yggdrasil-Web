@@ -41,6 +41,7 @@ onUnmounted(() => {
 const navLinks = [
   { name: '首页', path: '/' },
   { name: '仪表盘', path: '/dashboard', auth: true },
+  { name: '角色管理', path: '/role-management', auth: true }, // 添加角色管理链接
 ]
 </script>
 
@@ -104,6 +105,9 @@ const navLinks = [
                 <DropdownMenuSeparator />
                 <DropdownMenuItem as-child>
                   <router-link to="/dashboard">仪表盘</router-link>
+                </DropdownMenuItem>
+                <DropdownMenuItem as-child>
+                  <router-link to="/profile">个人信息</router-link>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled>设置</DropdownMenuItem>
                 <DropdownMenuSeparator />
