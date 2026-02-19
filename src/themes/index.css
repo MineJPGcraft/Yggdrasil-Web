@@ -1,0 +1,5 @@
+@import "./light.css";
+@import "./dark.css";
+@import "./ocean.css";
+
+/* Add new themes here, e.g. @import "./forest.css"; */
