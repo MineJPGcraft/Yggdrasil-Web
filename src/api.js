@@ -3,7 +3,9 @@ import logger from "../public/util/logger.js";
 import router from "@/router/index.js";
 
 // 后端 API 的基础 URL
-const baseURL = '/api';
+const baseURL = import.meta.env.PROD
+    ? (import.meta.env.VITE_API_BASE_URL || '/api')
+    : '/api';
 
 // 创建 axios 实例
 const api = axios.create({
@@ -117,7 +119,7 @@ export const uploadSkinAPI = async (uuid, textureType, file, model = '') => {
             formData.append('model', model);
         }
 
-        const response = await api.put(`/api/user/profile/${uuid}/${textureType}`, formData, {
+        const response = await api.put(`/user/profile/${uuid}/${textureType}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data' // 确保 Axios 发送正确的 Content-Type
             }
