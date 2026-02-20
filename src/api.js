@@ -38,7 +38,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response.status === 401) {
             // Token 过期或无效，清除 Token 并重定向到登录页面
-            localStorage.removeItem('token');
+            localStorage.removeItem('accessToken');
             router.push('/login');
         }
         return Promise.reject(error);
@@ -188,5 +188,15 @@ export const registerProfileAPI = async (profileName, username, password = '') =
     } catch (error) {
         console.error('注册角色失败:', error);
         throw error; // 将错误重新抛出
+    }
+};
+
+export const getServerMeta = async () => {
+    try {
+        const response = await api.get('/');
+        return response.data?.meta || null;
+    } catch (error) {
+        console.error('获取服务器元数据失败:', error);
+        return null;
     }
 };
