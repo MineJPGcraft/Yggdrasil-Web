@@ -256,7 +256,7 @@ watch(selectedProfile, async (newProfile) => { // watch 函数改为 async
       // 设置模型
       const model = newProfile.skinModel === 'slim' ? 'slim' : 'default';
       console.log('设置皮肤模型:', model);
-      skinViewerRef.value.player.model = model;
+      skinViewerRef.value.playerObject.modelType = model;
 
       // 添加一些动画和控制
       skinViewerRef.value.animation = new IdleAnimation();
