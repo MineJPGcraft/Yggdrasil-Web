@@ -5,8 +5,8 @@ import logger from "./util/logger.js";
 const app = express();
 app.use(history());
 
-const hostname = '127.0.0.1';
-const port = 5005;
+const hostname = '0.0.0.0';
+const port = 8081;
 
 app.use(express.static(`./dist`));
 
