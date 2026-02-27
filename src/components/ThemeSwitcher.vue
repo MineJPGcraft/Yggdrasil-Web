@@ -1,5 +1,5 @@
 <script setup>
-import { useColorMode } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -7,8 +7,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { themeOptions } from '@/themes/themes'
 
-const mode = useColorMode()
+const validThemes = themeOptions.map((theme) => theme.value)
+const currentTheme = useStorage('theme-preset', 'light')
+
+if (!validThemes.includes(currentTheme.value)) {
+  currentTheme.value = 'light'
+}
+
+document.documentElement.setAttribute('data-theme', currentTheme.value)
+
+const setTheme = (theme) => {
+  currentTheme.value = theme
+  document.documentElement.setAttribute('data-theme', theme)
+}
 </script>
 
 <template>
@@ -33,14 +46,12 @@ const mode = useColorMode()
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <DropdownMenuItem @click="mode = 'light'">
-        浅色
-      </DropdownMenuItem>
-      <DropdownMenuItem @click="mode = 'dark'">
-        深色
-      </DropdownMenuItem>
-      <DropdownMenuItem @click="mode = 'auto'">
-        系统
+      <DropdownMenuItem
+        v-for="theme in themeOptions"
+        :key="theme.value"
+        @click="setTheme(theme.value)"
+      >
+        {{ theme.label }}
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

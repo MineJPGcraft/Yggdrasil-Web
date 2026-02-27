@@ -3,7 +3,9 @@ import logger from "../public/util/logger.js";
 import router from "@/router/index.js";
 
 // 后端 API 的基础 URL
-const baseURL = '/api';
+const baseURL = import.meta.env.PROD
+    ? (import.meta.env.VITE_API_BASE_URL || '/api')
+    : '/api';
 
 // 创建 axios 实例
 const api = axios.create({
@@ -36,7 +38,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response.status === 401) {
             // Token 过期或无效，清除 Token 并重定向到登录页面
-            localStorage.removeItem('token');
+            localStorage.removeItem('accessToken');
             router.push('/login');
         }
         return Promise.reject(error);
@@ -117,7 +119,7 @@ export const uploadSkinAPI = async (uuid, textureType, file, model = '') => {
             formData.append('model', model);
         }
 
-        const response = await api.put(`/api/user/profile/${uuid}/${textureType}`, formData, {
+        const response = await api.put(`/user/profile/${uuid}/${textureType}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data' // 确保 Axios 发送正确的 Content-Type
             }
@@ -186,5 +188,15 @@ export const registerProfileAPI = async (profileName, username, password = '') =
     } catch (error) {
         console.error('注册角色失败:', error);
         throw error; // 将错误重新抛出
+    }
+};
+
+export const getServerMeta = async () => {
+    try {
+        const response = await api.get('/');
+        return response.data?.meta || null;
+    } catch (error) {
+        console.error('获取服务器元数据失败:', error);
+        return null;
     }
 };

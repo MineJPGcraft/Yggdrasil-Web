@@ -6,3 +6,6 @@ package-lock.json
 /test
 .yarn/
 .yarnrc.yml
+
+.env.*
+!.env.*.example
