@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import {onMounted, ref} from 'vue'
 import {getProfileDetailsAPI, getYggdrasilProfiles} from '@/api' // 导入新的 API 函数
+import {parseTexturesProperty} from '@/lib/textures'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table'
 
@@ -31,46 +32,30 @@ onMounted(async () => {
       return
     }
 
+    const detailedProfilesPromises = basicProfiles.map(async (p) => {
+      try {
+        const detailed = await getProfileDetailsAPI(p.id)
+        const {skinUrl, skinModel} = parseTexturesProperty(detailed.properties)
 
-      const detailedProfilesPromises = basicProfiles.map(async (p) => {
-        try {
-          const detailed = await getProfileDetailsAPI(p.id)
-          let skinUrl = 'N/A'
-          let skinModel = 'N/A'
-          const texturesProp = detailed.properties?.find(prop => prop.name === 'textures')
-
-          if (texturesProp && texturesProp.value) {
-            try {
-              const decoded = atob(texturesProp.value) // Base64解码
-              const texturesData = JSON.parse(decoded)
-              if (texturesData.textures && texturesData.textures.SKIN) {
-                skinUrl = texturesData.textures.SKIN.url
-                skinModel = texturesData.textures.SKIN.metadata?.model || 'default'
-              }
-            } catch (decodeError) {
-              console.error('解码或解析纹理数据失败:', decodeError)
-            }
-          }
-
-          return {
-            name: detailed.name,
-            id: detailed.id,
-            skinUrl: skinUrl,
-            skinModel: skinModel,
-          }
-        } catch (profileError) {
-          console.error(`获取角色 ${p.name} 详情失败:`, profileError)
-          return {
-            name: p.name,
-            id: p.id,
-            skinUrl: '获取失败',
-            skinModel: '获取失败',
-            error: true
-          }
+        return {
+          name: detailed.name,
+          id: detailed.id,
+          skinUrl: skinUrl || 'N/A',
+          skinModel: skinModel || 'N/A',
         }
-      })
+      } catch (profileError) {
+        console.error(`获取角色 ${p.name} 详情失败:`, profileError)
+        return {
+          name: p.name,
+          id: p.id,
+          skinUrl: '获取失败',
+          skinModel: '获取失败',
+          error: true
+        }
+      }
+    })
 
-      profiles.value = await Promise.all(detailedProfilesPromises)
+    profiles.value = await Promise.all(detailedProfilesPromises)
   } catch (err) {
     console.error('加载角色信息失败:', err)
     error.value = '加载角色信息失败。'

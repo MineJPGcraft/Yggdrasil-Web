@@ -7,6 +7,7 @@ import {
   uploadTextureAPI,
   yggdrasilAuthenticate,
 } from '@/api'
+import {parseTexturesProperty, parseUploadableTextures} from '@/lib/textures'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table'
 import {Button} from '@/components/ui/button'
@@ -50,45 +51,25 @@ const isUploadError = ref(false)
 const skinViewerRef = ref<SkinViewer | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
-// 刷新单个角色详情
+// 加载单个角色的完整详情（含皮肤信息与可上传材质类型）
+const loadProfileDetail = async (p: { id: string; name: string }): Promise<ProfileDetail> => {
+  const detailed = await getProfileDetailsAPI(p.id)
+  const {skinUrl, skinModel: parsedModel} = parseTexturesProperty(detailed.properties)
+  return {
+    ...detailed, // 包含所有详细信息，如 name, id, properties
+    skinUrl: skinUrl || 'N/A',
+    skinModel: parsedModel || 'N/A',
+    uploadableTextures: parseUploadableTextures(detailed.properties),
+    error: false
+  }
+}
+
+// 刷新单个角色详情，并同步更新列表与当前选中项
 const refreshProfileDetails = async (profileId: string) => {
   try {
-    const detailed = await getProfileDetailsAPI(profileId)
-    let skinUrl = 'N/A'
-    let skinModelVal = 'N/A'
-    let uploadableTextures: string[] = [] // 可上传的材质类型
-
-    const texturesProp = detailed.properties?.find(prop => prop.name === 'textures')
-    if (texturesProp && texturesProp.value) {
-      try {
-        const decoded = atob(texturesProp.value) // Base64解码
-        const texturesData = JSON.parse(decoded) as {
-          skin?: { url?: string; metadata?: { model?: string } }
-        }
-        // 修正：根据 Yggdrasil API 响应，顶层键是 'skin'，而不是 'textures'
-        if (texturesData.skin) {
-          skinUrl = texturesData.skin.url || 'N/A'
-          skinModelVal = texturesData.skin.metadata?.model || 'default'
-        }
-      } catch (decodeError) {
-        console.error('解码或解析纹理数据失败:', decodeError)
-      }
-    }
-
-    const uploadableTexturesProp = detailed.properties?.find(prop => prop.name === 'uploadableTextures')
-    if (uploadableTexturesProp && uploadableTexturesProp.value) {
-      uploadableTextures = uploadableTexturesProp.value.split(',')
-    }
-
-    // 更新 profiles 列表中的对应项
+    const updated = await loadProfileDetail({id: profileId, name: ''})
     const index = profiles.value.findIndex(p => p.id === profileId)
     if (index !== -1) {
-      const updated: ProfileDetail = {
-        ...detailed,
-        skinUrl: skinUrl,
-        skinModel: skinModelVal,
-        uploadableTextures: uploadableTextures,
-      }
       profiles.value[index] = updated
       // 如果当前选中的就是这个角色，也更新选中的角色
       if (selectedProfile.value && selectedProfile.value.id === profileId) {
@@ -99,7 +80,6 @@ const refreshProfileDetails = async (profileId: string) => {
     console.error(`刷新角色 ${profileId} 详情失败:`, profileError)
   }
 }
-
 
 onMounted(async () => {
   loading.value = true
@@ -114,55 +94,23 @@ onMounted(async () => {
       return
     }
 
-      const detailedProfilesPromises = basicProfiles.map(async (p) => {
-        try {
-          const detailed = await getProfileDetailsAPI(p.id)
-          let skinUrl = 'N/A'
-          let skinModelVal = 'N/A'
-          let uploadableTextures: string[] = [] // 可上传的材质类型
-
-          const texturesProp = detailed.properties?.find(prop => prop.name === 'textures')
-          if (texturesProp && texturesProp.value) {
-            try {
-              const decoded = atob(texturesProp.value) // Base64解码
-              const texturesData = JSON.parse(decoded) as {
-                skin?: { url?: string; metadata?: { model?: string } }
-              }
-              // 修正：根据 Yggdrasil API 响应，顶层键是 'skin'，而不是 'textures'
-              if (texturesData.skin) {
-                skinUrl = texturesData.skin.url || 'N/A'
-                skinModelVal = texturesData.skin.metadata?.model || 'default'
-              }
-            } catch (decodeError) {
-              console.error('解码或解析纹理数据失败:', decodeError)
-            }
-          }
-
-          const uploadableTexturesProp = detailed.properties?.find(prop => prop.name === 'uploadableTextures')
-          if (uploadableTexturesProp && uploadableTexturesProp.value) {
-            uploadableTextures = uploadableTexturesProp.value.split(',')
-          }
-
-          return {
-            ...detailed, // 包含所有详细信息，如 name, id, properties
-            skinUrl: skinUrl,
-            skinModel: skinModelVal,
-            uploadableTextures: uploadableTextures,
-          }
-        } catch (profileError) {
-          console.error(`获取角色 ${p.name} 详情失败:`, profileError)
-          return {
-            name: p.name,
-            id: p.id,
-            skinUrl: '获取失败',
-            skinModel: '获取失败',
-            uploadableTextures: [],
-            error: true
-          }
+    const detailedProfilesPromises = basicProfiles.map(async (p) => {
+      try {
+        return await loadProfileDetail(p)
+      } catch (profileError) {
+        console.error(`获取角色 ${p.name} 详情失败:`, profileError)
+        return {
+          name: p.name,
+          id: p.id,
+          skinUrl: '获取失败',
+          skinModel: '获取失败',
+          uploadableTextures: [],
+          error: true
         }
-      })
+      }
+    })
 
-      profiles.value = await Promise.all(detailedProfilesPromises)
+    profiles.value = await Promise.all(detailedProfilesPromises)
   } catch (err) {
     console.error('加载角色信息失败:', err)
     error.value = '加载角色信息失败。'

@@ -1,4 +1,3 @@
-import type {RouteLocationGeneric} from 'vue-router';
 import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 
@@ -11,7 +10,7 @@ declare module 'vue-router' {
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
-        redirect: (to: RouteLocationGeneric) => {
+        redirect: () => {
             const loggedIn = !!localStorage.getItem('userInfo');
             if (loggedIn) {
                 return { name: 'dashboard' };

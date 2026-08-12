@@ -6,6 +6,7 @@
 
 **Yggdrasil-Web** 是 Minecraft 外置登录（Yggdrasil / authlib-injector）身份验证服务器的**前端**实现。
 
+
 每次开发前都检索并使用 @D:\WebStorm\Yggdrasil-Web\.claude\skills 目录里的 skill 。
 
 - 它**不是**身份验证服务器本身，需要搭配后端 Yggdrasil 认证服务使用。
@@ -55,9 +56,18 @@ npm run start      # node ./dist/server.js（配合 public/server.js 部署）
 ### src/
 
 ```
-├── main.ts                     # 应用入口：挂载 App、注册 router、注入 $axios
+├── main.ts                     # 应用入口：挂载 App、注册 router、注入 $axios（含 GH Pages 深层路由恢复）
 ├── App.vue                     # 根组件：加载服务器元数据并设置 document.title
-├── api.ts                      # axios 实例 + 全部后端 API 封装（含类型定义）
+├── api/                        # axios 实例 + 全部后端 API 封装（按域拆分，统一由 index.ts 导出）
+│   ├── index.ts                # barrel：re-export 各域模块 + default http
+│   ├── http.ts                 # axios 实例、baseURL、拦截器（401 → /login）
+│   ├── types.ts                # 跨域共用类型（ApiError、GameProfile、ProfileProperty、CaptchaHeaders…）
+│   ├── server.ts               # GET /、GET /yggdrasil/（getServerStatus / getYggdrasilMeta / getServerMeta）
+│   ├── captcha.ts              # GET /captcha/config
+│   ├── email.ts                # POST /email/code/*（发送各类验证码）
+│   ├── user.ts                 # /user/* 与 /user/oidc/*（注册、登录、个人信息、OIDC）
+│   ├── admin.ts                # /admin/*（用户/封禁/角色/会话/审计日志）
+│   └── yggdrasil.ts            # /yggdrasil/api、launcher-sessions、profiles、authserver、sessionserver
 ├── style.css                   # 全局样式（Tailwind 入口）
 ├── layouts/
 │   └── DefaultLayout.vue       # 带 Navbar/Footer 的默认布局，包裹需登录的页面
@@ -68,7 +78,8 @@ npm run start      # node ./dist/server.js（配合 public/server.js 部署）
 │   ├── themes.ts               # 主题选项（浅色/深色/海洋）
 │   ├── light.css / dark.css / ocean.css
 ├── lib/
-│   └── utils.ts                # cn()（clsx + tailwind-merge）
+│   ├── utils.ts                # cn()（clsx + tailwind-merge）
+│   └── textures.ts             # textures / uploadableTextures 属性解码（parseTexturesProperty / parseUploadableTextures）
 ├── components/
 │   ├── Navbar.vue              # 顶栏：导航、主题切换、用户下拉菜单（含移动端 Sheet）
 │   ├── Footer.vue
@@ -88,19 +99,23 @@ npm run start      # node ./dist/server.js（配合 public/server.js 部署）
 ## 路由与认证
 
 - 路由见 `src/router/index.ts`。
-- 根路径 `/` 根据 `localStorage` 是否含 `accessToken` 重定向到 dashboard 或 login。
+- 根路径 `/` 根据 `localStorage` 是否含 `userInfo` 重定向到 dashboard 或 login。
 - 需要登录的页面设置 `meta: { requiresAuth: true }`；守卫会将其重定向到 `/login`，并带 `?redirect=` 回跳参数。
-- 登录态通过 `localStorage` 的 `accessToken` 维护（Navbar 监听 `storage` 事件实时刷新）。
+- 登录态通过 Cookie 会话（HttpOnly `sid`）维持；前端以 `localStorage.userInfo` 作为登录标记
+  （登录时由 `getUserInfo()` 写入，Navbar 监听 `storage` 事件实时刷新）。
 
 ## API 与数据流
 
-- 所有请求集中在 `src/api.ts`，导出类型化接口，如：
-    - `loginAPI(username, password)` → 保存 `accessToken` / `availableProfiles` 到 localStorage
+- 所有请求集中在 `src/api/`，按域拆分为模块（`http.ts` / `user.ts` / `admin.ts` / `yggdrasil.ts` 等），
+  由 `index.ts` 统一 re-export，导出类型化接口，如：
+  - `userLoginAPI()` / `registerUser()` / `getUserInfo()` / `userLogout()` → Web 端 Cookie 会话
     - `getProfileDetailsAPI(uuid)` → 获取角色详情（含 `properties`：`textures`、`uploadableTextures`）
-    - `uploadSkinAPI(uuid, textureType, file, model)`、`register`、`registerProfileAPI`、`getServerMeta`
+  - `getYggdrasilProfiles()` / `uploadTextureAPI()` / `createLauncherSession()` / `yggdrasilAuthenticate()`
+    → 角色与材质（材质上传需 Bearer accessToken，由启动器会话 + authserver 换取）
 - 开发环境请求走 Vite 代理 `/api` → `VITE_DEV_API_PROXY_TARGET`（默认 `http://192.168.1.132:8095`），生产走
   `VITE_API_BASE_URL`。
-- 角色（Profile）信息：登录后从 `availableProfiles` 读取，Dashboard / RoleManagement 据此拉取详情。
+- 角色（Profile）信息：Web 端通过 Cookie 会话调用 `getYggdrasilProfiles()` 获取，
+  Dashboard / RoleManagement 据此拉取详情。
 
 ## 约定与注意事项
 
@@ -110,13 +125,15 @@ npm run start      # node ./dist/server.js（配合 public/server.js 部署）
 - **`@` 别名**指向 `./src`（tsconfig 与 vite 均已配置）。
 - **本地化**：UI 文案为简体中文。
 - **主题**：`ThemeSwitcher` 通过 `data-theme` 属性切换；主题由 CSS 变量定义。
-- **已知警告**：`skinview3d`（three.js）体积较大，构建时会有 chunk > 500 kB 的警告，属正常现象，可后续通过动态 import 优化。
+- **已知警告**：`skinview3d`（three.js）体积较大，已通过路由懒加载 + `manualChunks` 分包处理（`vendor-three` /
+  `vendor-skinview3d` 独立 chunk），单个 chunk 均小于 500 kB。
 - **代码风格**：模板中保留原文注释；改动时避免破坏既有中文注释。
 
 ## 常用开发路径
 
 - 新增页面：在 `src/views/` 创建组件 → 在 `src/router/index.ts` 注册路由（如需登录则加 `requiresAuth`）。
-- 新增 API：在 `src/api.ts` 添加带类型的函数。
+- 新增 API：按所属域在 `src/api/` 对应模块添加带类型的函数（`user.ts` / `admin.ts` / `yggdrasil.ts` 等），跨域共用类型放
+  `types.ts`。
 - 调整导航：修改 `src/components/Navbar.vue` 的 `navLinks`。
 
 ## 备注

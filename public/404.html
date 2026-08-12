@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <title>页面重定向</title>
+    <script>
+        // GitHub Pages 等纯静态托管不支持 history 路由的深层路径回退。
+        // 将原始地址暂存到 sessionStorage，再回到站点根，由应用（src/main.ts）恢复真实路由。
+        sessionStorage.setItem('redirect', location.href);
+        location.replace('./');
+    </script>
+</head>
+<body></body>
+</html>
