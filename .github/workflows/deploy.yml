@@ -28,7 +28,8 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: npm ci
+        # 仓库未提交 package-lock.json（见 .gitignore），需用 npm install
+        run: npm install
       - name: Build
         env:
           # 后端地址需在仓库 Settings → Secrets 中配置，指向可公开访问的认证服务

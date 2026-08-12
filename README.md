@@ -77,6 +77,52 @@ npm run preview   # 预览构建产物
 npm run type-check
 ```
 
+### 开发时如何配置后端地址
+
+前端在**开发环境**永远通过 `/api` 前缀请求后端，由 Vite 开发服务器代理转发到真实后端，
+因此你**不需要修改任何业务代码**，只需告诉 Vite 后端在哪。
+
+**步骤：**
+
+1. 复制环境变量示例文件（若尚未创建）：
+
+   ```bash
+   cp .env.development.example .env.development
+   ```
+
+2. 编辑 `.env.development`，把 `VITE_DEV_API_PROXY_TARGET` 改成你本机可达的后端地址：
+
+   ```bash
+   # 后端跑在同一台机器上
+   VITE_DEV_API_PROXY_TARGET=http://127.0.0.1:8095
+
+   # 后端跑在局域网其他机器（如宿舍/公司服务器）
+   VITE_DEV_API_PROXY_TARGET=http://192.168.1.132:8095
+
+   # 后端是公网/云端地址
+   VITE_DEV_API_PROXY_TARGET=https://auth.example.com
+   ```
+
+3. 启动开发服务器：
+
+   ```bash
+   npm run dev
+   ```
+
+   此时页面里的 `GET /api/user/me` 会被 Vite 转发为 `GET {VITE_DEV_API_PROXY_TARGET}/user/me`。
+
+**验证是否生效：**
+
+- 访问 `http://localhost:5173/api/test`，能返回后端响应即说明代理通了（默认开发端口 5173）。
+- 若配置未生效，先重启 `npm run dev`（`.env.*` 在启动时读取一次）。
+
+**常见坑：**
+
+- 改了 `.env.development` 后必须重启 `npm run dev`。
+- 后端地址不带 `/api` 前缀（Vite 代理会帮你转发并去掉 `/api`）。
+- 后端若校验 CORS / Referer，请把 `http://localhost:5173` 加入其允许来源。
+- 代理转发配置在 `vite.config.ts` 的 `server.proxy` 中，一般无需修改。
+
 ## 部署
 
 前端为纯静态 SPA，需配合**可访问的 Yggdrasil 认证后端**使用。以下两种部署方式任选其一。
@@ -95,7 +141,7 @@ npm run type-check
 ```bash
 git clone <你的仓库地址> Yggdrasil-Web
 cd Yggdrasil-Web
-npm ci
+npm install    # 仓库未提交 package-lock.json，勿用 npm ci
 ```
 
 **3. 配置后端地址（构建期）**
@@ -197,7 +243,7 @@ GitHub Pages 是纯静态托管，**无法承载后端认证服务**，仅部署
 
 仓库已内置 `.github/workflows/deploy.yml`：推送 `main` 分支或手动触发后，自动：
 
-1. `npm ci` 安装依赖
+1. `npm install` 安装依赖（仓库未提交 lockfile，故不用 `npm ci`）
 2. 注入 `secrets.VITE_API_BASE_URL` 执行 `npm run build`
 3. 将 `dist/` 发布到 GitHub Pages
 

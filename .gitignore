@@ -11,3 +11,6 @@ package-lock.json
 !.env.*.example
 
 .claude
+
+.env.development
+.env.production

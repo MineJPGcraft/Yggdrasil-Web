@@ -6,7 +6,6 @@
 
 **Yggdrasil-Web** 是 Minecraft 外置登录（Yggdrasil / authlib-injector）身份验证服务器的**前端**实现。
 
-
 每次开发前都检索并使用 @D:\WebStorm\Yggdrasil-Web\.claude\skills 目录里的 skill 。
 
 - 它**不是**身份验证服务器本身，需要搭配后端 Yggdrasil 认证服务使用。
