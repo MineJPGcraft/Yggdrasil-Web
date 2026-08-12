@@ -4,8 +4,6 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/comp
 import {Button} from '@/components/ui/button'
 import {Label} from '@/components/ui/label'
 import {Input} from '@/components/ui/input'
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar' // 导入 Avatar 组件
-import {uploadAvatarAPI} from '@/api' // 导入虚拟头像上传 API
 
 // 占位符数据，实际应该从后端获取
 const userEmail = ref('user@example.com') // 假设当前用户的邮箱
@@ -16,13 +14,6 @@ const oidcProvider = ref('') // OIDC 绑定信息
 
 const message = ref('')
 const isError = ref(false)
-
-// 头像上传相关状态
-const currentAvatarUrl = ref('/placeholder-user.jpg') // 默认头像或从用户数据获取
-const avatarFile = ref<File | null>(null)
-const isUploadingAvatar = ref(false)
-const avatarUploadMessage = ref('')
-const isAvatarUploadError = ref(false)
 
 const handleEmailChange = () => {
   message.value = '修改邮箱功能尚未实现，此为占位符。'
@@ -39,49 +30,6 @@ const handleOidcBind = () => {
   isError.value = false
 }
 
-const handleAvatarFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/gif')) {
-    avatarFile.value = file
-    avatarUploadMessage.value = ''
-    isAvatarUploadError.value = false
-  } else {
-    avatarFile.value = null
-    avatarUploadMessage.value = '请选择一个图片文件 (PNG, JPG, GIF)。'
-    isAvatarUploadError.value = true
-  }
-}
-
-const handleAvatarUpload = async () => {
-  if (!avatarFile.value) {
-    avatarUploadMessage.value = '请选择要上传的头像文件。'
-    isAvatarUploadError.value = true
-    return
-  }
-
-  isUploadingAvatar.value = true
-  avatarUploadMessage.value = ''
-  isAvatarUploadError.value = false
-
-  try {
-    const responseMessage = await uploadAvatarAPI(avatarFile.value) // 调用虚拟 API
-    avatarUploadMessage.value = responseMessage
-    // 模拟成功后更新头像URL，实际应该从后端获取新的头像URL
-    currentAvatarUrl.value = URL.createObjectURL(avatarFile.value)
-    // 清空文件输入
-    const input = document.getElementById('avatar-file') as HTMLInputElement | null
-    if (input) input.value = ''
-    avatarFile.value = null
-  } catch (err) {
-    console.error('头像上传失败:', err)
-    avatarUploadMessage.value = (err as Error).message || '头像上传失败，请重试。'
-    isAvatarUploadError.value = true
-  } finally {
-    isUploadingAvatar.value = false
-  }
-}
-
 </script>
 
 <template>
@@ -93,32 +41,6 @@ const handleAvatarUpload = async () => {
     </div>
 
     <div class="space-y-6">
-      <!-- 上传头像 -->
-      <Card>
-        <CardHeader>
-          <CardTitle>上传头像</CardTitle>
-          <CardDescription>更新您的个人头像。</CardDescription>
-        </CardHeader>
-        <CardContent class="space-y-4">
-          <div class="flex items-center space-x-4">
-            <Avatar class="h-20 w-20">
-              <AvatarImage :src="currentAvatarUrl" alt="用户头像" />
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-            <div class="grid gap-2">
-              <Label for="avatar-file">选择头像文件</Label>
-              <Input id="avatar-file" type="file" accept="image/png, image/jpeg, image/gif" @change="handleAvatarFileChange" />
-            </div>
-          </div>
-          <div v-if="avatarUploadMessage" :class="['text-sm font-medium', isAvatarUploadError ? 'text-destructive' : 'text-primary']">
-            {{ avatarUploadMessage }}
-          </div>
-          <Button :disabled="isUploadingAvatar" @click="handleAvatarUpload">
-            {{ isUploadingAvatar ? '正在上传...' : '上传头像' }}
-          </Button>
-        </CardContent>
-      </Card>
-
       <!-- 修改邮箱 -->
       <Card>
         <CardHeader>

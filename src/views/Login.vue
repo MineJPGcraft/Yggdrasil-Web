@@ -5,7 +5,7 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {loginAPI} from '@/api';
+import {getUserInfo, userLoginAPI} from '@/api';
 import {AxiosError} from 'axios';
 
 const email = ref('');
@@ -21,17 +21,18 @@ const handleLogin = async () => {
   }
 
   try {
-    await loginAPI(email.value, password.value);
-    // The API automatically sets the token, so we just need to navigate.
-    // A small delay to allow potential storage events to fire if needed by other components.
-    setTimeout(() => {
-        router.push('/dashboard');
-    }, 100);
+    // Cookie 会话登录（无响应体），成功后会话凭据由浏览器自动携带
+    await userLoginAPI({email: email.value, password: password.value});
 
+    // 拉取用户信息作为前端会话标记，供路由守卫 / Navbar 使用
+    const user = await getUserInfo();
+    localStorage.setItem('userInfo', JSON.stringify(user));
+
+    router.push('/dashboard');
   } catch (error) {
     console.error('登录失败:', error);
-    const err = error as AxiosError<{ message?: string }>;
-    errorMessage.value = err.response?.data?.message || '登录失败。请检查您的凭据并重试。';
+    const err = error as AxiosError<{ errorMessage?: string }>;
+    errorMessage.value = err.response?.data?.errorMessage || '登录失败。请检查您的凭据并重试。';
   }
 };
 </script>

@@ -1,6 +1,12 @@
 <script lang="ts" setup>
 import {nextTick, onMounted, ref, watch} from 'vue' // 导入 watch
-import {type AvailableProfile, getProfileDetailsAPI, uploadSkinAPI} from '@/api'
+import {
+  createLauncherSession,
+  getProfileDetailsAPI,
+  getYggdrasilProfiles,
+  uploadTextureAPI,
+  yggdrasilAuthenticate,
+} from '@/api'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table'
 import {Button} from '@/components/ui/button'
@@ -99,14 +105,14 @@ onMounted(async () => {
   loading.value = true
   error.value = null
   try {
-    const storedProfiles = localStorage.getItem('availableProfiles')
-    if (storedProfiles) {
-      const basicProfiles = JSON.parse(storedProfiles) as AvailableProfile[]
-      if (basicProfiles.length === 0) {
-        profiles.value = []
-        loading.value = false
-        return
-      }
+    // 通过 Cookie 会话获取当前账号的角色列表
+    const list = await getYggdrasilProfiles()
+    const basicProfiles = list.profiles
+    if (basicProfiles.length === 0) {
+      profiles.value = []
+      loading.value = false
+      return
+    }
 
       const detailedProfilesPromises = basicProfiles.map(async (p) => {
         try {
@@ -157,9 +163,6 @@ onMounted(async () => {
       })
 
       profiles.value = await Promise.all(detailedProfilesPromises)
-    } else {
-      profiles.value = []
-    }
   } catch (err) {
     console.error('加载角色信息失败:', err)
     error.value = '加载角色信息失败。'
@@ -208,7 +211,19 @@ const handleUploadSkin = async () => {
   isUploadError.value = false
 
   try {
-    await uploadSkinAPI(selectedProfile.value.id, 'skin', skinFile.value, skinModel.value)
+    // 材质上传需要 Yggdrasil Bearer accessToken：
+    // 1. 通过 Cookie 为选中角色创建启动器会话
+    // 2. 用启动器会话凭据调用 authserver/authenticate 换取 accessToken
+    // 3. 用 accessToken 上传皮肤
+    const session = await createLauncherSession(selectedProfile.value.id)
+    const auth = await yggdrasilAuthenticate({
+      username: session.username,
+      password: session.password,
+      requestUser: false
+    })
+    const model = skinModel.value === 'slim' ? 'slim' as const : '' as const
+    await uploadTextureAPI(selectedProfile.value.id, 'skin', skinFile.value, model, auth.accessToken)
+
     uploadMessage.value = '皮肤上传成功！'
     // 重新获取选定角色的详情以更新预览
     await refreshProfileDetails(selectedProfile.value.id)

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import {onMounted, ref} from 'vue'
-import {type AvailableProfile, getProfileDetailsAPI} from '@/api' // 导入新的 API 函数
+import {getProfileDetailsAPI, getYggdrasilProfiles} from '@/api' // 导入新的 API 函数
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table'
 
@@ -20,18 +20,16 @@ onMounted(async () => {
   loading.value = true
   error.value = null
   try {
-    const storedProfiles = localStorage.getItem('availableProfiles')
-    console.log('从localStorage获取的原始availableProfiles:', storedProfiles); // 添加日志
+    // 通过 Cookie 会话获取当前账号的角色列表
+    const list = await getYggdrasilProfiles()
+    const basicProfiles = list.profiles
+    console.log('获取到的角色列表:', basicProfiles); // 添加日志
 
-    if (storedProfiles) {
-      const basicProfiles = JSON.parse(storedProfiles) as AvailableProfile[]
-      console.log('解析后的basicProfiles:', basicProfiles); // 添加日志
-
-      if (basicProfiles.length === 0) {
-        profiles.value = [] // 没有角色
-        loading.value = false
-        return
-      }
+    if (basicProfiles.length === 0) {
+      profiles.value = [] // 没有角色
+      loading.value = false
+      return
+    }
 
 
       const detailedProfilesPromises = basicProfiles.map(async (p) => {
@@ -73,10 +71,6 @@ onMounted(async () => {
       })
 
       profiles.value = await Promise.all(detailedProfilesPromises)
-
-    } else {
-      profiles.value = []
-    }
   } catch (err) {
     console.error('加载角色信息失败:', err)
     error.value = '加载角色信息失败。'

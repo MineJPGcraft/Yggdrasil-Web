@@ -5,23 +5,47 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {register, registerProfileAPI} from '@/api';
+import {registerUser, sendRegisterEmailCode} from '@/api';
 import {AxiosError} from 'axios';
 
 const email = ref('');
+const emailCode = ref(''); // 新增：注册邮箱验证码
 const password = ref('');
 const confirmPassword = ref('');
-const profileName = ref(''); // 新增：角色名
+const displayName = ref(''); // 账户显示名（原角色名改为显示名，角色需登录后创建）
 const message = ref('');
 const isError = ref(false);
 const isLoading = ref(false);
+const isSendingCode = ref(false);
 const router = useRouter();
+
+const handleSendCode = async () => {
+  if (!email.value) {
+    message.value = '请先填写邮箱。';
+    isError.value = true;
+    return;
+  }
+  isSendingCode.value = true;
+  message.value = '';
+  isError.value = false;
+  try {
+    await sendRegisterEmailCode(email.value);
+    message.value = '验证码已发送到您的邮箱。';
+  } catch (error) {
+    console.error('发送验证码失败:', error);
+    const err = error as AxiosError<{ errorMessage?: string }>;
+    message.value = err.response?.data?.errorMessage || '验证码发送失败，请重试。';
+    isError.value = true;
+  } finally {
+    isSendingCode.value = false;
+  }
+};
 
 const handleRegister = async () => {
   message.value = '';
   isError.value = false;
 
-  if (!email.value || !password.value || !confirmPassword.value || !profileName.value) { // 新增 profileName 验证
+  if (!email.value || !emailCode.value || !password.value || !confirmPassword.value || !displayName.value) { // 新增 emailCode 验证
     message.value = '所有字段都是必填项。';
     isError.value = true;
     return;
@@ -35,16 +59,10 @@ const handleRegister = async () => {
 
   isLoading.value = true;
   try {
-    const userData = {
-      username: email.value,
-      password: password.value,
-    };
-    await register(userData); // 先注册用户
+    // 注册用户（邮箱 + 验证码 + 显示名）
+    await registerUser(email.value, password.value, emailCode.value, displayName.value);
 
-    // 用户注册成功后，使用用户提供的角色名注册角色
-    await registerProfileAPI(profileName.value, email.value, password.value); // 传入密码以防后端需要
-
-    message.value = '账户和角色创建成功！正在跳转到登录页...';
+    message.value = '账户创建成功！正在跳转到登录页...';
     isError.value = false;
     setTimeout(() => {
       router.push('/login');
@@ -68,17 +86,26 @@ const handleRegister = async () => {
           创建账户
         </CardTitle>
         <CardDescription>
-          输入您的邮箱、密码和角色名开始。
+          输入您的邮箱、验证码、密码和显示名开始。
         </CardDescription>
       </CardHeader>
       <CardContent class="grid gap-4">
         <div class="grid gap-2">
           <Label for="email">邮箱</Label>
-          <Input id="email" v-model="email" type="email" placeholder="m@example.com" required />
+          <div class="flex gap-2">
+            <Input id="email" v-model="email" placeholder="m@example.com" required type="email"/>
+            <Button :disabled="isSendingCode" type="button" variant="outline" @click="handleSendCode">
+              {{ isSendingCode ? '发送中...' : '获取验证码' }}
+            </Button>
+          </div>
         </div>
         <div class="grid gap-2">
-          <Label for="profile-name">角色名</Label>
-          <Input id="profile-name" v-model="profileName" type="text" placeholder="请输入您的角色名" required />
+          <Label for="email-code">邮箱验证码</Label>
+          <Input id="email-code" v-model="emailCode" placeholder="请输入验证码" required type="text"/>
+        </div>
+        <div class="grid gap-2">
+          <Label for="display-name">显示名</Label>
+          <Input id="display-name" v-model="displayName" placeholder="请输入您的显示名" required type="text"/>
         </div>
         <div class="grid gap-2">
           <Label for="password">密码</Label>

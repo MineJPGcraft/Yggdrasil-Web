@@ -13,9 +13,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       vueDevTools(),
-      tailwindcss({
-          config: 'tailwind.config.mjs',
-      }) as unknown as PluginOption,
+      tailwindcss() as unknown as PluginOption,
     ],
     base: './',
     resolve: {
@@ -33,5 +31,22 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vue 核心
+            'vendor-vue': ['vue', 'vue-router'],
+            // Three.js 及 skinview3d（体积最大，单独分包）
+            'vendor-three': ['three'],
+            'vendor-skinview3d': ['skinview3d'],
+            // UI 组件库
+            'vendor-reka': ['reka-ui'],
+            // 工具库
+            'vendor-utils': ['axios', '@vueuse/core', 'clsx', 'tailwind-merge', 'class-variance-authority'],
+          }
+        }
+      }
+    }
   }
 })

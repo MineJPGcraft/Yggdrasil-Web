@@ -14,20 +14,28 @@ import {
 import {Sheet, SheetContent, SheetTrigger} from '@/components/ui/sheet'
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar'
 import ThemeSwitcher from './ThemeSwitcher.vue'
+import {userLogout} from '@/api'
 
 const router = useRouter()
 const isAuthenticated = ref(false)
 const sheetOpen = ref(false)
 const serverName = useStorage('server-name', 'Yggdrasil')
 
+// 登录态以 localStorage 中的 userInfo 为标记（真实会话凭据为 HttpOnly Cookie）
 const checkAuth = () => {
-  isAuthenticated.value = !!localStorage.getItem('accessToken')
+  isAuthenticated.value = !!localStorage.getItem('userInfo')
 }
 
-const logout = () => {
-  localStorage.removeItem('accessToken')
-  checkAuth()
-  router.push('/login')
+const logout = async () => {
+  try {
+    await userLogout()
+  } catch (e) {
+    console.error('登出失败:', e)
+  } finally {
+    localStorage.removeItem('userInfo')
+    checkAuth()
+    router.push('/login')
+  }
 }
 
 // Check authentication status when component mounts
