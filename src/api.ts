@@ -1,6 +1,6 @@
-import axios from "axios";
-import logger from "../public/util/logger.js";
-import router from "@/router/index.js";
+import type {AxiosResponse} from "axios";
+import axios, {AxiosError} from "axios";
+import router from "@/router";
 
 // 后端 API 的基础 URL
 const baseURL = import.meta.env.PROD
@@ -35,8 +35,8 @@ api.interceptors.response.use(
     (response) => {
         return response;
     },
-    (error) => {
-        if (error.response.status === 401) {
+    (error: AxiosError) => {
+        if (error.response?.status === 401) {
             // Token 过期或无效，清除 Token 并重定向到登录页面
             localStorage.removeItem('accessToken');
             router.push('/login');
@@ -45,15 +45,49 @@ api.interceptors.response.use(
     }
 );
 
+/** Yggdrasil 认证响应中的角色信息 */
+export interface AvailableProfile {
+    id: string
+    name: string
+}
 
-export const loginAPI = async (username, password) => {
+/** /authserver/authenticate 的响应体 */
+export interface AuthenticateResponse {
+    accessToken: string
+    clientToken?: string
+    availableProfiles?: AvailableProfile[]
+    selectedProfile?: AvailableProfile
+    user?: unknown
+}
+
+/** 角色详情中的属性项 */
+export interface ProfileProperty {
+    name: string
+    value: string
+}
+
+/** 获取到的角色详情（properties 中可能包含 textures / uploadableTextures） */
+export interface GameProfile {
+    id: string
+    name: string
+    properties?: ProfileProperty[]
+}
+
+/** 服务器元数据 */
+export interface ServerMeta {
+    serverName?: string
+
+    [key: string]: unknown
+}
+
+export const loginAPI = async (username: string, password: string): Promise<AxiosResponse<AuthenticateResponse>> => {
     console.log('--- 调用 loginAPI ---');
     console.log('请求登录的用户名:', username);
     // 注意: 密码不应该在生产环境中打印，这里仅为调试目的。
-    // console.log('请求登录的密码:', password); 
+    // console.log('请求登录的密码:', password);
 
     try {
-        const res = await api.post(
+        const res = await api.post<AuthenticateResponse>(
             '/authserver/authenticate',
             {
                 username: username,
@@ -63,7 +97,7 @@ export const loginAPI = async (username, password) => {
         );
         console.log('登录API响应数据:', res.data); // 添加日志
         console.log('登录API响应中的可用角色:', res.data.availableProfiles); // 添加日志
-        
+
         // 根据 Yggdrasil 规范，成功的响应直接返回 accessToken，不包含 code 字段
         localStorage.setItem("accessToken", res.data.accessToken);
         // 如果响应中包含 availableProfiles，也将其存储起来
@@ -89,7 +123,7 @@ export const loginAPI = async (username, password) => {
  * @param {File} file - 头像文件
  * @returns {Promise<string>} - 模拟上传成功的消息
  */
-export const uploadAvatarAPI = async (file) => {
+export const uploadAvatarAPI = async (file: File): Promise<string> => {
     return new Promise(resolve => {
         console.log('模拟头像上传:', file.name, file.type);
         setTimeout(() => {
@@ -104,9 +138,8 @@ export const uploadAvatarAPI = async (file) => {
  * @param {string} textureType - 材质类型 (e.g., 'skin')
  * @param {File} file - 皮肤文件 (PNG格式)
  * @param {string} model - 皮肤模型 ('slim' 或 '')
- * @returns {Promise<any>}
  */
-export const uploadSkinAPI = async (uuid, textureType, file, model = '') => {
+export const uploadSkinAPI = async (uuid: string, textureType: string, file: File, model = '') => {
     try {
         // Token now handled by interceptor, no need for explicit check here
         // if (!localStorage.getItem('accessToken')) {
@@ -134,15 +167,14 @@ export const uploadSkinAPI = async (uuid, textureType, file, model = '') => {
 /**
  * 获取指定 UUID 角色的详细信息 (包含属性，如皮肤)
  * @param {string} uuid - 角色的 UUID
- * @returns {Promise<any>} - 包含角色详细信息的 Promise
  */
-export const getProfileDetailsAPI = async (uuid) => {
+export const getProfileDetailsAPI = async (uuid: string): Promise<GameProfile> => {
     try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
             throw new Error('未检测到认证令牌，请重新登录。');
         }
-        const response = await api.get(`/sessionserver/session/minecraft/profile/${uuid}?unsigned=true`, {
+        const response = await api.get<GameProfile>(`/sessionserver/session/minecraft/profile/${uuid}?unsigned=true`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -154,8 +186,16 @@ export const getProfileDetailsAPI = async (uuid) => {
     }
 };
 
+/** 注册用户请求体 */
+export interface RegisterUserData {
+    username: string
+    password: string
+
+    [key: string]: unknown
+}
+
 // 注册 API
-export const register = async (userData) => {
+export const register = async (userData: RegisterUserData) => {
     try {
         const response = await api.post('/extern/register/user', userData);
         return response.data;
@@ -170,11 +210,10 @@ export const register = async (userData) => {
  * @param {string} profileName - 角色名
  * @param {string} username - 要绑定的用户名 (通常是邮箱)
  * @param {string} password - 要绑定的用户密码 (如果后端配置 profile-strict 为 true 则必须)
- * @returns {Promise<any>}
  */
-export const registerProfileAPI = async (profileName, username, password = '') => {
+export const registerProfileAPI = async (profileName: string, username: string, password = '') => {
     try {
-        const requestBody = {
+        const requestBody: Record<string, string> = {
             profileName: profileName,
             username: username,
         };
@@ -191,9 +230,9 @@ export const registerProfileAPI = async (profileName, username, password = '') =
     }
 };
 
-export const getServerMeta = async () => {
+export const getServerMeta = async (): Promise<ServerMeta | null> => {
     try {
-        const response = await api.get('/');
+        const response = await api.get<{ meta?: ServerMeta }>('/');
         return response.data?.meta || null;
     } catch (error) {
         console.error('获取服务器元数据失败:', error);

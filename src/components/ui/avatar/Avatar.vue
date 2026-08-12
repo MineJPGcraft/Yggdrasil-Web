@@ -1,13 +1,16 @@
-<script setup>
-import { AvatarRoot } from "reka-ui";
-import { cn } from "@/lib/utils";
-import { avatarVariant } from ".";
+<script lang="ts" setup>
+import type {AvatarRootProps} from "reka-ui";
+import {AvatarRoot} from "reka-ui";
+import {cn} from "@/lib/utils";
+import {avatarVariant} from ".";
 
-const props = defineProps({
-  class: { type: null, required: false },
-  size: { type: null, required: false, default: "sm" },
-  shape: { type: null, required: false, default: "circle" },
-});
+interface AvatarProps extends AvatarRootProps {
+  class?: string;
+  size?: "sm" | "base" | "lg";
+  shape?: "circle" | "square";
+}
+
+const props = defineProps<AvatarProps>();
 </script>
 
 <template>

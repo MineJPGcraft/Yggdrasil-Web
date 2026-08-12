@@ -1,23 +1,12 @@
-<script setup>
-import { reactiveOmit } from "@vueuse/core";
-import { Circle } from "lucide-vue-next";
-import {
-  DropdownMenuItemIndicator,
-  DropdownMenuRadioItem,
-  useForwardPropsEmits,
-} from "reka-ui";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {reactiveOmit} from "@vueuse/core";
+import {Circle} from "lucide-vue-next";
+import type {DropdownMenuRadioItemEmits, DropdownMenuRadioItemProps} from "reka-ui";
+import {DropdownMenuItemIndicator, DropdownMenuRadioItem, useForwardPropsEmits,} from "reka-ui";
+import {cn} from "@/lib/utils";
 
-const props = defineProps({
-  value: { type: null, required: true },
-  disabled: { type: Boolean, required: false },
-  textValue: { type: String, required: false },
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
-});
-
-const emits = defineEmits(["select"]);
+const props = defineProps<DropdownMenuRadioItemProps & { class?: string }>();
+const emits = defineEmits<DropdownMenuRadioItemEmits>();
 
 const delegatedProps = reactiveOmit(props, "class");
 

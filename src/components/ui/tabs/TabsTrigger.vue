@@ -1,15 +1,10 @@
-<script setup>
-import { reactiveOmit } from "@vueuse/core";
-import { TabsTrigger, useForwardProps } from "reka-ui";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {reactiveOmit} from "@vueuse/core";
+import type {TabsTriggerProps} from "reka-ui";
+import {TabsTrigger, useForwardProps} from "reka-ui";
+import {cn} from "@/lib/utils";
 
-const props = defineProps({
-  value: { type: [String, Number], required: true },
-  disabled: { type: Boolean, required: false },
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
-});
+const props = defineProps<TabsTriggerProps & { class?: string }>();
 
 const delegatedProps = reactiveOmit(props, "class");
 

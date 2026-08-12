@@ -1,8 +1,8 @@
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useStorage } from '@vueuse/core'
-import { Button } from '@/components/ui/button'
+<script lang="ts" setup>
+import {onMounted, onUnmounted, ref} from 'vue'
+import {useRouter} from 'vue-router'
+import {useStorage} from '@vueuse/core'
+import {Button} from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {Sheet, SheetContent, SheetTrigger} from '@/components/ui/sheet'
+import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
 const router = useRouter()
@@ -40,7 +40,13 @@ onUnmounted(() => {
   window.removeEventListener('storage', checkAuth)
 })
 
-const navLinks = [
+interface NavLink {
+  name: string
+  path: string
+  auth: boolean
+}
+
+const navLinks: NavLink[] = [
   { name: '仪表盘', path: '/dashboard', auth: true },
   { name: '角色管理', path: '/role-management', auth: true }, // 添加角色管理链接
 ]

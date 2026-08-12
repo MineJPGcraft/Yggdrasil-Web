@@ -1,18 +1,12 @@
-<script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { register, registerProfileAPI } from '../api.js';
+<script lang="ts" setup>
+import {ref} from 'vue';
+import {useRouter} from 'vue-router';
+import {Button} from '@/components/ui/button';
+import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,} from '@/components/ui/card';
+import {Input} from '@/components/ui/input';
+import {Label} from '@/components/ui/label';
+import {register, registerProfileAPI} from '@/api';
+import {AxiosError} from 'axios';
 
 const email = ref('');
 const password = ref('');
@@ -57,7 +51,8 @@ const handleRegister = async () => {
     }, 2000);
   } catch (error) {
     console.error('注册失败:', error);
-    message.value = error.response?.data?.errorMessage || error.message || '注册失败。请重试。';
+    const err = error as AxiosError<{ errorMessage?: string }>;
+    message.value = err.response?.data?.errorMessage || (error as Error).message || '注册失败。请重试。';
     isError.value = true;
   } finally {
     isLoading.value = false;

@@ -1,4 +1,4 @@
-import { cva } from "class-variance-authority";
+import {cva, type VariantProps} from "class-variance-authority";
 
 export { default as Sheet } from "./Sheet.vue";
 export { default as SheetClose } from "./SheetClose.vue";
@@ -27,3 +27,5 @@ export const sheetVariants = cva(
     },
   },
 );
+
+export type SheetVariants = VariantProps<typeof sheetVariants>

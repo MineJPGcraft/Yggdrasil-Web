@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import type {RouteLocationGeneric} from 'vue-router';
+import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import Login from '../views/Login.vue';
 import Register from "../views/register.vue";
@@ -7,10 +8,16 @@ import Dashboard from "@/views/Dashboard.vue";
 import RoleManagement from "@/views/RoleManagement.vue";
 import UserProfile from "@/views/UserProfile.vue"; // 导入 UserProfile 组件
 
-const routes = [
+declare module 'vue-router' {
+    interface RouteMeta {
+        requiresAuth?: boolean
+    }
+}
+
+const routes: RouteRecordRaw[] = [
     {
         path: '/',
-        redirect: to => {
+        redirect: (to: RouteLocationGeneric) => {
             const token = localStorage.getItem('accessToken');
             if (token) {
                 return { name: 'dashboard' };
@@ -76,7 +83,7 @@ router.beforeEach((to, from, next) => {
 
     // 定义只有未认证用户才能访问的页面
     const publicOnlyPages = ['login', 'register', 'reset-password'];
-    const isPublicOnlyPage = publicOnlyPages.includes(to.name);
+    const isPublicOnlyPage = publicOnlyPages.includes(String(to.name));
 
     // 情况1: 用户已认证，但尝试访问登录/注册/重置密码页面
     if (isAuthenticated && isPublicOnlyPage) {

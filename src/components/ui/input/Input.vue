@@ -1,14 +1,16 @@
-<script setup>
-import { useVModel } from "@vueuse/core";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {useVModel} from "@vueuse/core";
+import {cn} from "@/lib/utils";
 
-const props = defineProps({
-  defaultValue: { type: [String, Number], required: false },
-  modelValue: { type: [String, Number], required: false },
-  class: { type: null, required: false },
-});
+const props = defineProps<{
+  defaultValue?: string | number
+  modelValue?: string | number
+  class?: string
+}>();
 
-const emits = defineEmits(["update:modelValue"]);
+const emits = defineEmits<{
+  "update:modelValue": [value: string | number]
+}>();
 
 const modelValue = useVModel(props, "modelValue", emits, {
   passive: true,

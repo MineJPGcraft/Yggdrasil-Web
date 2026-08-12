@@ -1,4 +1,4 @@
-import { cva } from "class-variance-authority";
+import {cva, type VariantProps} from "class-variance-authority";
 
 export { default as Avatar } from "./Avatar.vue";
 export { default as AvatarFallback } from "./AvatarFallback.vue";
@@ -20,3 +20,5 @@ export const avatarVariant = cva(
     },
   },
 );
+
+export type AvatarVariants = VariantProps<typeof avatarVariant>

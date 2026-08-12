@@ -1,13 +1,10 @@
-<script setup>
-import { reactiveOmit } from "@vueuse/core";
-import { SelectGroup } from "reka-ui";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {reactiveOmit} from "@vueuse/core";
+import type {SelectGroupProps} from "reka-ui";
+import {SelectGroup} from "reka-ui";
+import {cn} from "@/lib/utils";
 
-const props = defineProps({
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
-});
+const props = defineProps<SelectGroupProps & { class?: string }>();
 
 const delegatedProps = reactiveOmit(props, "class");
 </script>

@@ -1,17 +1,11 @@
-<script setup>
-import { ref } from 'vue'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar' // 导入 Avatar 组件
-import { uploadAvatarAPI } from '@/api.js' // 导入虚拟头像上传 API
+<script lang="ts" setup>
+import {ref} from 'vue'
+import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
+import {Button} from '@/components/ui/button'
+import {Label} from '@/components/ui/label'
+import {Input} from '@/components/ui/input'
+import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar' // 导入 Avatar 组件
+import {uploadAvatarAPI} from '@/api' // 导入虚拟头像上传 API
 
 // 占位符数据，实际应该从后端获取
 const userEmail = ref('user@example.com') // 假设当前用户的邮箱
@@ -25,7 +19,7 @@ const isError = ref(false)
 
 // 头像上传相关状态
 const currentAvatarUrl = ref('/placeholder-user.jpg') // 默认头像或从用户数据获取
-const avatarFile = ref(null)
+const avatarFile = ref<File | null>(null)
 const isUploadingAvatar = ref(false)
 const avatarUploadMessage = ref('')
 const isAvatarUploadError = ref(false)
@@ -45,8 +39,9 @@ const handleOidcBind = () => {
   isError.value = false
 }
 
-const handleAvatarFileChange = (event) => {
-  const file = event.target.files[0]
+const handleAvatarFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
   if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/gif')) {
     avatarFile.value = file
     avatarUploadMessage.value = ''
@@ -75,11 +70,12 @@ const handleAvatarUpload = async () => {
     // 模拟成功后更新头像URL，实际应该从后端获取新的头像URL
     currentAvatarUrl.value = URL.createObjectURL(avatarFile.value)
     // 清空文件输入
-    document.getElementById('avatar-file').value = ''
+    const input = document.getElementById('avatar-file') as HTMLInputElement | null
+    if (input) input.value = ''
     avatarFile.value = null
   } catch (err) {
     console.error('头像上传失败:', err)
-    avatarUploadMessage.value = err.message || '头像上传失败，请重试。'
+    avatarUploadMessage.value = (err as Error).message || '头像上传失败，请重试。'
     isAvatarUploadError.value = true
   } finally {
     isUploadingAvatar.value = false

@@ -1,15 +1,10 @@
-<script setup>
-import { reactiveOmit } from "@vueuse/core";
-import { TabsContent } from "reka-ui";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {reactiveOmit} from "@vueuse/core";
+import type {TabsContentProps} from "reka-ui";
+import {TabsContent} from "reka-ui";
+import {cn} from "@/lib/utils";
 
-const props = defineProps({
-  value: { type: [String, Number], required: true },
-  forceMount: { type: Boolean, required: false },
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
-});
+const props = defineProps<TabsContentProps & { class?: string }>();
 
 const delegatedProps = reactiveOmit(props, "class");
 </script>

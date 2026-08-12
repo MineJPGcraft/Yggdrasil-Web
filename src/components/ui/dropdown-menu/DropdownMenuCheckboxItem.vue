@@ -1,22 +1,12 @@
-<script setup>
-import { reactiveOmit } from "@vueuse/core";
-import { Check } from "lucide-vue-next";
-import {
-  DropdownMenuCheckboxItem,
-  DropdownMenuItemIndicator,
-  useForwardPropsEmits,
-} from "reka-ui";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {reactiveOmit} from "@vueuse/core";
+import {Check} from "lucide-vue-next";
+import type {DropdownMenuCheckboxItemEmits, DropdownMenuCheckboxItemProps,} from "reka-ui";
+import {DropdownMenuCheckboxItem, DropdownMenuItemIndicator, useForwardPropsEmits,} from "reka-ui";
+import {cn} from "@/lib/utils";
 
-const props = defineProps({
-  modelValue: { type: [Boolean, String], required: false },
-  disabled: { type: Boolean, required: false },
-  textValue: { type: String, required: false },
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
-});
-const emits = defineEmits(["select", "update:modelValue"]);
+const props = defineProps<DropdownMenuCheckboxItemProps & { class?: string }>();
+const emits = defineEmits<DropdownMenuCheckboxItemEmits>();
 
 const delegatedProps = reactiveOmit(props, "class");
 

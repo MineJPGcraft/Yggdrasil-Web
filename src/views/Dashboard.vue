@@ -1,25 +1,20 @@
-<script setup>
-import { ref, onMounted } from 'vue'
-import { getProfileDetailsAPI } from '@/api.js' // 导入新的 API 函数
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+<script lang="ts" setup>
+import {onMounted, ref} from 'vue'
+import {type AvailableProfile, getProfileDetailsAPI} from '@/api' // 导入新的 API 函数
+import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table'
 
-const profiles = ref([])
+interface ProfileRow {
+  id: string
+  name: string
+  skinUrl: string
+  skinModel: string
+  error?: boolean
+}
+
+const profiles = ref<ProfileRow[]>([])
 const loading = ref(true)
-const error = ref(null)
+const error = ref<string | null>(null)
 
 onMounted(async () => {
   loading.value = true
@@ -29,7 +24,7 @@ onMounted(async () => {
     console.log('从localStorage获取的原始availableProfiles:', storedProfiles); // 添加日志
 
     if (storedProfiles) {
-      const basicProfiles = JSON.parse(storedProfiles)
+      const basicProfiles = JSON.parse(storedProfiles) as AvailableProfile[]
       console.log('解析后的basicProfiles:', basicProfiles); // 添加日志
 
       if (basicProfiles.length === 0) {

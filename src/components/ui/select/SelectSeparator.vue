@@ -1,13 +1,10 @@
-<script setup>
-import { reactiveOmit } from "@vueuse/core";
-import { SelectSeparator } from "reka-ui";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {reactiveOmit} from "@vueuse/core";
+import type {SelectSeparatorProps} from "reka-ui";
+import {SelectSeparator} from "reka-ui";
+import {cn} from "@/lib/utils";
 
-const props = defineProps({
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
-});
+const props = defineProps<SelectSeparatorProps & { class?: string }>();
 
 const delegatedProps = reactiveOmit(props, "class");
 </script>

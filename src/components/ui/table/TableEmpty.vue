@@ -1,13 +1,13 @@
-<script setup>
-import { reactiveOmit } from "@vueuse/core";
-import { cn } from "@/lib/utils";
+<script lang="ts" setup>
+import {reactiveOmit} from "@vueuse/core";
+import {cn} from "@/lib/utils";
 import TableCell from "./TableCell.vue";
 import TableRow from "./TableRow.vue";
 
-const props = defineProps({
-  class: { type: null, required: false },
-  colspan: { type: Number, required: false, default: 1 },
-});
+const props = defineProps<{
+  class?: string
+  colspan?: number
+}>();
 
 const delegatedProps = reactiveOmit(props, "class");
 </script>

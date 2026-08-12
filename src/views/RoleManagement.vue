@@ -1,24 +1,11 @@
-<script setup>
-import { ref, onMounted, watch, nextTick } from 'vue' // 导入 watch
-import { getProfileDetailsAPI, uploadSkinAPI } from '@/api.js'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
+<script lang="ts" setup>
+import {nextTick, onMounted, ref, watch} from 'vue' // 导入 watch
+import {type AvailableProfile, getProfileDetailsAPI, uploadSkinAPI} from '@/api'
+import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table'
+import {Button} from '@/components/ui/button'
+import {Label} from '@/components/ui/label'
+import {Input} from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -28,40 +15,53 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { SkinViewer, IdleAnimation } from 'skinview3d' // 导入 SkinViewer
+import {IdleAnimation, SkinViewer} from 'skinview3d' // 导入 SkinViewer
+import {AxiosError} from 'axios'
+
+interface ProfileDetail {
+  id: string
+  name: string
+  properties?: { name: string; value: string }[]
+  skinUrl: string
+  skinModel: string
+  uploadableTextures: string[]
+  error?: boolean
+}
 
 const loading = ref(true)
-const error = ref(null)
-const profiles = ref([])
-const selectedProfile = ref(null)
+const error = ref<string | null>(null)
+const profiles = ref<ProfileDetail[]>([])
+const selectedProfile = ref<ProfileDetail | null>(null)
 
 // 皮肤上传相关状态
-const skinFile = ref(null)
+const skinFile = ref<File | null>(null)
 const skinModel = ref('default') // 默认为 default
 const isUploadingSkin = ref(false)
 const uploadMessage = ref('')
 const isUploadError = ref(false)
 
 // SkinViewer 相关状态
-const skinViewerRef = ref(null)
-const canvasRef = ref(null)
+const skinViewerRef = ref<SkinViewer | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 // 刷新单个角色详情
-const refreshProfileDetails = async (profileId) => {
+const refreshProfileDetails = async (profileId: string) => {
   try {
     const detailed = await getProfileDetailsAPI(profileId)
     let skinUrl = 'N/A'
     let skinModelVal = 'N/A'
-    let uploadableTextures = [] // 可上传的材质类型
+    let uploadableTextures: string[] = [] // 可上传的材质类型
 
     const texturesProp = detailed.properties?.find(prop => prop.name === 'textures')
     if (texturesProp && texturesProp.value) {
       try {
         const decoded = atob(texturesProp.value) // Base64解码
-        const texturesData = JSON.parse(decoded)
+        const texturesData = JSON.parse(decoded) as {
+          skin?: { url?: string; metadata?: { model?: string } }
+        }
         // 修正：根据 Yggdrasil API 响应，顶层键是 'skin'，而不是 'textures'
         if (texturesData.skin) {
-          skinUrl = texturesData.skin.url
+          skinUrl = texturesData.skin.url || 'N/A'
           skinModelVal = texturesData.skin.metadata?.model || 'default'
         }
       } catch (decodeError) {
@@ -77,15 +77,16 @@ const refreshProfileDetails = async (profileId) => {
     // 更新 profiles 列表中的对应项
     const index = profiles.value.findIndex(p => p.id === profileId)
     if (index !== -1) {
-      profiles.value[index] = {
-        ...detailed, // 包含所有详细信息，如 name, id, properties
+      const updated: ProfileDetail = {
+        ...detailed,
         skinUrl: skinUrl,
         skinModel: skinModelVal,
         uploadableTextures: uploadableTextures,
       }
+      profiles.value[index] = updated
       // 如果当前选中的就是这个角色，也更新选中的角色
       if (selectedProfile.value && selectedProfile.value.id === profileId) {
-        selectedProfile.value = profiles.value[index]
+        selectedProfile.value = updated
       }
     }
   } catch (profileError) {
@@ -100,7 +101,7 @@ onMounted(async () => {
   try {
     const storedProfiles = localStorage.getItem('availableProfiles')
     if (storedProfiles) {
-      const basicProfiles = JSON.parse(storedProfiles)
+      const basicProfiles = JSON.parse(storedProfiles) as AvailableProfile[]
       if (basicProfiles.length === 0) {
         profiles.value = []
         loading.value = false
@@ -112,16 +113,18 @@ onMounted(async () => {
           const detailed = await getProfileDetailsAPI(p.id)
           let skinUrl = 'N/A'
           let skinModelVal = 'N/A'
-          let uploadableTextures = [] // 可上传的材质类型
+          let uploadableTextures: string[] = [] // 可上传的材质类型
 
           const texturesProp = detailed.properties?.find(prop => prop.name === 'textures')
           if (texturesProp && texturesProp.value) {
             try {
               const decoded = atob(texturesProp.value) // Base64解码
-              const texturesData = JSON.parse(decoded)
+              const texturesData = JSON.parse(decoded) as {
+                skin?: { url?: string; metadata?: { model?: string } }
+              }
               // 修正：根据 Yggdrasil API 响应，顶层键是 'skin'，而不是 'textures'
               if (texturesData.skin) {
-                skinUrl = texturesData.skin.url
+                skinUrl = texturesData.skin.url || 'N/A'
                 skinModelVal = texturesData.skin.metadata?.model || 'default'
               }
             } catch (decodeError) {
@@ -165,7 +168,7 @@ onMounted(async () => {
   }
 })
 
-const selectProfile = (profile) => {
+const selectProfile = (profile: ProfileDetail) => {
   selectedProfile.value = profile
   // 重置上传表单状态
   skinFile.value = null
@@ -174,8 +177,9 @@ const selectProfile = (profile) => {
   isUploadError.value = false
 }
 
-const handleFileChange = (event) => {
-  const file = event.target.files[0]
+const handleFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
   if (file && file.type === 'image/png') {
     skinFile.value = file
     uploadMessage.value = ''
@@ -209,11 +213,13 @@ const handleUploadSkin = async () => {
     // 重新获取选定角色的详情以更新预览
     await refreshProfileDetails(selectedProfile.value.id)
     // 清空文件输入
-    document.getElementById('skin-file').value = ''
+    const input = document.getElementById('skin-file') as HTMLInputElement | null
+    if (input) input.value = ''
     skinFile.value = null
   } catch (err) {
     console.error('皮肤上传失败:', err)
-    uploadMessage.value = err.response?.data?.errorMessage || '皮肤上传失败，请重试。'
+    const axiosErr = err as AxiosError<{ errorMessage?: string }>
+    uploadMessage.value = axiosErr.response?.data?.errorMessage || '皮肤上传失败，请重试。'
     isUploadError.value = true
   } finally {
     isUploadingSkin.value = false
@@ -247,7 +253,6 @@ watch(selectedProfile, async (newProfile) => { // watch 函数改为 async
         width: 200, // 预览宽度
         height: 300, // 预览高度
         background: 0xAAAAAA, // 设置一个可见的背景色，方便调试
-        transparent: false, // 明确设置为不透明背景
       });
 
       console.log('SkinViewer 实例创建成功，尝试加载皮肤:', newProfile.skinUrl);
@@ -256,7 +261,7 @@ watch(selectedProfile, async (newProfile) => { // watch 函数改为 async
       // 设置模型
       const model = newProfile.skinModel === 'slim' ? 'slim' : 'default';
       console.log('设置皮肤模型:', model);
-      skinViewerRef.value.playerObject.modelType = model;
+      skinViewerRef.value.playerObject.skin.modelType = model;
 
       // 添加一些动画和控制
       skinViewerRef.value.animation = new IdleAnimation();

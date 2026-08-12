@@ -1,7 +1,7 @@
-<script setup>
-import { onMounted } from 'vue'
-import { useStorage } from '@vueuse/core'
-import { getServerMeta } from '@/api'
+<script lang="ts" setup>
+import {onMounted} from 'vue'
+import {useStorage} from '@vueuse/core'
+import {getServerMeta} from '@/api'
 
 const serverName = useStorage('server-name', 'Yggdrasil')
 

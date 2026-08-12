@@ -1,5 +1,6 @@
-import { fileURLToPath, URL } from 'node:url'
-import { defineConfig, loadEnv } from 'vite'
+import {fileURLToPath, URL} from 'node:url'
+import type {PluginOption} from 'vite'
+import {defineConfig, loadEnv} from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/postcss'
@@ -13,8 +14,8 @@ export default defineConfig(({ mode }) => {
       vue(),
       vueDevTools(),
       tailwindcss({
-        config: 'tailwind.config.js',
-      }),
+          config: 'tailwind.config.mjs',
+      }) as unknown as PluginOption,
     ],
     base: './',
     resolve: {

@@ -1,18 +1,12 @@
-<script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { loginAPI } from '../api.js';
+<script lang="ts" setup>
+import {ref} from 'vue';
+import {useRouter} from 'vue-router';
+import {Button} from '@/components/ui/button';
+import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,} from '@/components/ui/card';
+import {Input} from '@/components/ui/input';
+import {Label} from '@/components/ui/label';
+import {loginAPI} from '@/api';
+import {AxiosError} from 'axios';
 
 const email = ref('');
 const password = ref('');
@@ -36,7 +30,8 @@ const handleLogin = async () => {
 
   } catch (error) {
     console.error('登录失败:', error);
-    errorMessage.value = error.response?.data?.message || '登录失败。请检查您的凭据并重试。';
+    const err = error as AxiosError<{ message?: string }>;
+    errorMessage.value = err.response?.data?.message || '登录失败。请检查您的凭据并重试。';
   }
 };
 </script>

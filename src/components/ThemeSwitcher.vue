@@ -1,13 +1,8 @@
-<script setup>
-import { useStorage } from '@vueuse/core'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { themeOptions } from '@/themes/themes'
+<script lang="ts" setup>
+import {useStorage} from '@vueuse/core'
+import {Button} from '@/components/ui/button'
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from '@/components/ui/dropdown-menu'
+import {themeOptions} from '@/themes/themes'
 
 const validThemes = themeOptions.map((theme) => theme.value)
 const currentTheme = useStorage('theme-preset', 'light')
@@ -18,7 +13,7 @@ if (!validThemes.includes(currentTheme.value)) {
 
 document.documentElement.setAttribute('data-theme', currentTheme.value)
 
-const setTheme = (theme) => {
+const setTheme = (theme: string) => {
   currentTheme.value = theme
   document.documentElement.setAttribute('data-theme', theme)
 }

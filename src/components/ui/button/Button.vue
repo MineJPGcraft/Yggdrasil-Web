@@ -1,15 +1,15 @@
-<script setup>
-import { Primitive } from "reka-ui";
-import { cn } from "@/lib/utils";
-import { buttonVariants } from ".";
+<script lang="ts" setup>
+import {Primitive} from "reka-ui";
+import {cn} from "@/lib/utils";
+import {buttonVariants} from ".";
 
-const props = defineProps({
-  variant: { type: null, required: false },
-  size: { type: null, required: false },
-  class: { type: null, required: false },
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false, default: "button" },
-});
+const props = defineProps<{
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "xs" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg"
+  class?: string
+  asChild?: boolean
+  as?: string
+}>();
 </script>
 
 <template>
