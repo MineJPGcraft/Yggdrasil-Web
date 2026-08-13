@@ -2,6 +2,8 @@
 import {nextTick, onMounted, ref, watch} from 'vue' // 导入 watch
 import {
   createLauncherSession,
+  createYggdrasilProfile,
+  deleteYggdrasilProfile,
   getProfileDetailsAPI,
   getYggdrasilProfiles,
   uploadTextureAPI,
@@ -39,6 +41,17 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const profiles = ref<ProfileDetail[]>([])
 const selectedProfile = ref<ProfileDetail | null>(null)
+
+// 创建角色相关状态
+const newRoleName = ref('')
+const isCreatingRole = ref(false)
+const createRoleMessage = ref('')
+const isCreateRoleError = ref(false)
+
+// 删除角色相关状态
+const deletingRoleId = ref('')
+const deleteRoleMessage = ref('')
+const isDeleteRoleError = ref(false)
 
 // 皮肤上传相关状态
 const skinFile = ref<File | null>(null)
@@ -82,6 +95,11 @@ const refreshProfileDetails = async (profileId: string) => {
 }
 
 onMounted(async () => {
+  await loadProfiles()
+})
+
+/** 加载当前账号的角色列表及详情 */
+const loadProfiles = async () => {
   loading.value = true
   error.value = null
   try {
@@ -117,7 +135,58 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+// 创建角色
+const handleCreateRole = async () => {
+  createRoleMessage.value = ''
+  isCreateRoleError.value = false
+  if (!newRoleName.value.trim()) {
+    createRoleMessage.value = '请输入角色名称。'
+    isCreateRoleError.value = true
+    return
+  }
+  isCreatingRole.value = true
+  try {
+    await createYggdrasilProfile(newRoleName.value.trim())
+    createRoleMessage.value = '角色创建成功。'
+    newRoleName.value = ''
+    await loadProfiles()
+  } catch (err) {
+    console.error('创建角色失败:', err)
+    const axiosErr = err as AxiosError<{ errorMessage?: string }>
+    createRoleMessage.value = axiosErr.response?.data?.errorMessage || '角色创建失败，请重试。'
+    isCreateRoleError.value = true
+  } finally {
+    isCreatingRole.value = false
+  }
+}
+
+// 删除角色
+const handleDeleteRole = async (profileId: string) => {
+  const profile = profiles.value.find(p => p.id === profileId)
+  if (!window.confirm(`确定删除角色「${profile?.name || profileId}」吗？删除后其绑定的启动器会话与令牌将自动失效。`)) {
+    return
+  }
+  deleteRoleMessage.value = ''
+  isDeleteRoleError.value = false
+  deletingRoleId.value = profileId
+  try {
+    await deleteYggdrasilProfile(profileId)
+    deleteRoleMessage.value = '角色删除成功。'
+    if (selectedProfile.value?.id === profileId) {
+      selectedProfile.value = null
+    }
+    await loadProfiles()
+  } catch (err) {
+    console.error('删除角色失败:', err)
+    const axiosErr = err as AxiosError<{ errorMessage?: string }>
+    deleteRoleMessage.value = axiosErr.response?.data?.errorMessage || '角色删除失败，请重试。'
+    isDeleteRoleError.value = true
+  } finally {
+    deletingRoleId.value = ''
+  }
+}
 
 const selectProfile = (profile: ProfileDetail) => {
   selectedProfile.value = profile
@@ -266,12 +335,37 @@ watch(selectedProfile, async (newProfile) => { // watch 函数改为 async
       <p>{{ error }}</p>
     </div>
     <div v-else>
+      <!-- 创建角色 -->
       <Card>
+        <CardHeader>
+          <CardTitle>创建角色</CardTitle>
+          <CardDescription>为您的账号创建一个 Minecraft 角色。</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="grid w-full max-w-sm items-center gap-1.5">
+            <Label for="role-name">角色名称</Label>
+            <Input id="role-name" v-model="newRoleName" placeholder="请输入角色名称"/>
+          </div>
+          <div v-if="createRoleMessage"
+               :class="['text-sm font-medium', isCreateRoleError ? 'text-destructive' : 'text-primary']">
+            {{ createRoleMessage }}
+          </div>
+          <Button :disabled="isCreatingRole" @click="handleCreateRole">
+            {{ isCreatingRole ? '创建中...' : '创建角色' }}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card class="mt-8">
         <CardHeader>
           <CardTitle>您的角色列表</CardTitle>
           <CardDescription v-if="profiles.length === 0">您还没有任何角色。请先注册角色。</CardDescription>
         </CardHeader>
         <CardContent v-if="profiles.length > 0">
+          <div v-if="deleteRoleMessage"
+               :class="['text-sm font-medium mb-4', isDeleteRoleError ? 'text-destructive' : 'text-primary']">
+            {{ deleteRoleMessage }}
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -291,8 +385,12 @@ watch(selectedProfile, async (newProfile) => { // watch 函数改为 async
                   <a v-if="profile.skinUrl && profile.skinUrl !== 'N/A' && !profile.error" :href="profile.skinUrl" target="_blank" class="text-primary hover:underline">查看皮肤</a>
                   <span v-else>{{ profile.skinUrl }}</span>
                 </TableCell>
-                <TableCell class="text-right">
+                <TableCell class="text-right space-x-2">
                   <Button size="sm" @click="selectProfile(profile)">选择</Button>
+                  <Button :disabled="deletingRoleId === profile.id" size="sm" variant="destructive"
+                          @click="handleDeleteRole(profile.id)">
+                    {{ deletingRoleId === profile.id ? '删除中...' : '删除' }}
+                  </Button>
                 </TableCell>
               </TableRow>
             </TableBody>

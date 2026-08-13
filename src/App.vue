@@ -1,17 +1,11 @@
 <script lang="ts" setup>
-import {onMounted} from 'vue'
-import {useStorage} from '@vueuse/core'
-import {getServerMeta} from '@/api'
+import {useRoute} from 'vue-router'
+import {buildTitle, setPageMeta} from '@/lib/seo'
 
-const serverName = useStorage('server-name', 'Yggdrasil')
-
-onMounted(async () => {
-  const meta = await getServerMeta()
-  if (meta?.serverName) {
-    serverName.value = meta.serverName
-  }
-  document.title = serverName.value
-})
+// 根组件：配置加载完成后（main.ts 已 await），设置一次页面标题兜底；
+// 后续路由切换由 router.afterEach 统一更新。
+const route = useRoute()
+setPageMeta(buildTitle(route.meta.title || '首页'))
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import {onMounted, onUnmounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
-import {useStorage} from '@vueuse/core'
+import {getSiteConfig} from '@/lib/siteConfig'
 import {Button} from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -19,7 +19,8 @@ import {userLogout} from '@/api'
 const router = useRouter()
 const isAuthenticated = ref(false)
 const sheetOpen = ref(false)
-const serverName = useStorage('server-name', 'Yggdrasil')
+// 品牌名来自站点配置（public/config.json）
+const siteName = getSiteConfig().brand.name
 
 // 登录态以 localStorage 中的 userInfo 为标记（真实会话凭据为 HttpOnly Cookie）
 const checkAuth = () => {
@@ -57,6 +58,7 @@ interface NavLink {
 const navLinks: NavLink[] = [
   { name: '仪表盘', path: '/dashboard', auth: true },
   { name: '角色管理', path: '/role-management', auth: true }, // 添加角色管理链接
+  {name: '启动器会话', path: '/launcher-sessions', auth: true}, // 启动器会话管理
 ]
 </script>
 
@@ -66,7 +68,7 @@ const navLinks: NavLink[] = [
       <div class="mr-4 hidden md:flex">
         <router-link to="/" class="mr-6 flex items-center space-x-2">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="h-6 w-6"><rect width="256" height="256" fill="none"/><line x1="208" y1="128" x2="128" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="192" y1="40" x2="40" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
-          <span class="font-bold hidden sm:inline-block">{{ serverName }}</span>
+          <span class="font-bold hidden sm:inline-block">{{ siteName }}</span>
         </router-link>
         <nav class="flex items-center space-x-6 text-sm font-medium">
           <template v-for="link in navLinks" :key="link.name">
@@ -88,7 +90,7 @@ const navLinks: NavLink[] = [
         <SheetContent side="left" class="pr-0">
             <router-link to="/" @click="sheetOpen = false" class="mb-4 flex items-center space-x-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="h-6 w-6"><rect width="256" height="256" fill="none"/><line x1="208" y1="128" x2="128" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="192" y1="40" x2="40" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
-              <span class="font-bold">{{ serverName }}</span>
+              <span class="font-bold">{{ siteName }}</span>
             </router-link>
           <div class="flex flex-col space-y-3">
              <template v-for="link in navLinks" :key="link.name">

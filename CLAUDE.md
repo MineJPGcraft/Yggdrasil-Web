@@ -48,6 +48,7 @@ npm run start      # node ./dist/server.js（配合 public/server.js 部署）
 ├── tailwind.config.mjs         # Tailwind 内容扫描配置
 └── public/
     ├── server.js               # Express 静态服务器（生产环境，端口 8081）
+    ├── config.json             # 站点配置（SEO/品牌/Home 页面/页脚），用户可直接编辑，无需重新构建
     ├── config.toml             # 服务器展示信息配置
     └── util/                   # server.js 依赖（configuration.js / logger.js）
 ```
@@ -78,21 +79,25 @@ npm run start      # node ./dist/server.js（配合 public/server.js 部署）
 │   ├── light.css / dark.css / ocean.css
 ├── lib/
 │   ├── utils.ts                # cn()（clsx + tailwind-merge）
-│   └── textures.ts             # textures / uploadableTextures 属性解码（parseTexturesProperty / parseUploadableTextures）
+│   ├── textures.ts             # textures / uploadableTextures 属性解码（parseTexturesProperty / parseUploadableTextures）
+│   ├── seo.ts                  # SEO 辅助：setPageMeta / buildTitle（读站点配置）
+│   └── siteConfig.ts           # 站点配置：类型 + 默认值 + loadSiteConfig（fetch public/config.json）
 ├── components/
 │   ├── Navbar.vue              # 顶栏：导航、主题切换、用户下拉菜单（含移动端 Sheet）
-│   ├── Footer.vue
+│   ├── Footer.vue              # 页脚：品牌/链接列/联系方式/友情链接/底部栏（读站点配置）
 │   ├── ThemeSwitcher.vue       # 主题切换下拉菜单
 │   └── ui/                     # shadcn-vue 组件库（avatar/button/card/dropdown-menu/input/label/select/separator/sheet/table/tabs）
 │       └── <组件>/index.ts      # 统一导出入口（命名导出组件 + 变体）
 └── views/
-    ├── Login.vue               # 登录（调用 loginAPI）
+    ├── Home.vue                # 首页落地页（公开，读站点配置，SEO 优化）
+    ├── Login.vue               # 登录（密码/邮箱验证码/OIDC）
     ├── register.vue            # 注册（用户 + 角色）
-    ├── ResetPassword.vue       # 忘记密码（占位实现）
+    ├── ResetPassword.vue       # 忘记密码（邮箱验证码验证 + 设置新密码）
+    ├── OidcCallback.vue        # OIDC 回调（登录/绑定成功与失败处理）
     ├── Dashboard.vue           # 仪表盘：展示角色列表与皮肤链接
-    ├── RoleManagement.vue      # 角色管理：skinview3d 预览 + 皮肤上传
-    ├── UserProfile.vue         # 个人信息：头像/邮箱/密码/OIDC（部分占位）
-    └── Home.vue                # 首页（未在路由中使用）
+    ├── RoleManagement.vue      # 角色管理：skinview3d 预览 + 皮肤上传 + 角色创建/删除
+    ├── LauncherSessions.vue    # 启动器会话管理：创建/列表/凭据查看/删除
+    └── UserProfile.vue         # 个人信息：邮箱/密码/OIDC 绑定解绑
 ```
 
 ## 路由与认证
@@ -127,6 +132,16 @@ npm run start      # node ./dist/server.js（配合 public/server.js 部署）
 - **已知警告**：`skinview3d`（three.js）体积较大，已通过路由懒加载 + `manualChunks` 分包处理（`vendor-three` /
   `vendor-skinview3d` 独立 chunk），单个 chunk 均小于 500 kB。
 - **代码风格**：模板中保留原文注释；改动时避免破坏既有中文注释。
+
+## 站点配置（public/config.json）
+
+站点的 SEO 元信息（标题/描述/关键词）、品牌名、Home 页面（Hero/功能特性/启动器接入指引）以及页脚均可通过
+`public/config.json` 配置，**无需重新构建**。应用启动时（`src/main.ts` 顶部 `await loadSiteConfig()`）fetch 该文件，
+并与 `src/lib/siteConfig.ts` 中的默认配置深合并，缺失字段使用默认值。
+
+- 配置结构与默认值见 `src/lib/siteConfig.ts` 中的类型定义与 `defaultConfig`。
+- SEO 标题/描述在 `src/lib/seo.ts` 读取配置；各页面标题由 `src/router/index.ts` 的 `afterEach` 设置。
+- Home 页读 `src/views/Home.vue`，页脚读 `src/components/Footer.vue`，导航栏品牌名读 `src/components/Navbar.vue`。
 
 ## 常用开发路径
 

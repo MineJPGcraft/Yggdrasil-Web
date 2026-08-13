@@ -1,0 +1,155 @@
+{
+  "seo": {
+    "title": "Yggdrasil Web",
+    "description": "Yggdrasil Web 是一个支持 Minecraft 外置登录（Yggdrasil / authlib-injector）的身份验证前端，提供注册、登录、角色与皮肤管理、启动器会话等功能。",
+    "keywords": [
+      "Minecraft",
+      "外置登录",
+      "外置登陆",
+      "Yggdrasil",
+      "authlib-injector",
+      "皮肤站",
+      "启动器会话"
+    ]
+  },
+  "brand": {
+    "name": "Yggdrasil Web",
+    "tagline": "Minecraft 外置登录身份验证"
+  },
+  "home": {
+    "hero": {
+      "badge": "Minecraft 外置登录",
+      "title": "Yggdrasil",
+      "titleHighlight": "Web",
+      "description": "Minecraft 外置登录（Yggdrasil / authlib-injector）身份验证前端，一站式管理您的账号、角色与皮肤。",
+      "primaryCta": {
+        "text": "立即注册",
+        "to": "/register"
+      },
+      "secondaryCta": {
+        "text": "登录",
+        "to": "/login"
+      },
+      "showMotd": true
+    },
+    "features": {
+      "enabled": true,
+      "title": "平台功能",
+      "description": "一站式管理您的账号、角色与皮肤。",
+      "items": [
+        {
+          "label": "邮箱注册",
+          "description": "使用邮箱注册新账号",
+          "flag": "email_register"
+        },
+        {
+          "label": "邮箱登录",
+          "description": "支持密码与邮箱验证码登录",
+          "flag": "email_login"
+        },
+        {
+          "label": "OIDC 第三方登录",
+          "description": "支持 Google、GitHub 等授权登录",
+          "flag": "find_oidc"
+        },
+        {
+          "label": "人机验证",
+          "description": "注册与登录安全防护",
+          "flag": "find_captcha"
+        }
+      ]
+    },
+    "launcherGuide": {
+      "enabled": true,
+      "title": "接入启动器",
+      "description": "在支持 authlib-injector 的启动器中，将下方的 API 地址填入「验证服务器（外置登录）」即可使用本服务器账号登录。",
+      "showApiLocation": true,
+      "homepageLinkText": "访问验证服务器首页"
+    }
+  },
+  "footer": {
+    "about": "Yggdrasil Web 是一个支持 Minecraft 外置登录（Yggdrasil / authlib-injector）的身份验证前端，提供注册、登录、角色与皮肤管理、启动器会话等功能。",
+    "columns": [
+      {
+        "title": "快速导航",
+        "links": [
+          {
+            "text": "首页",
+            "to": "/"
+          },
+          {
+            "text": "注册",
+            "to": "/register"
+          },
+          {
+            "text": "登录",
+            "to": "/login"
+          },
+          {
+            "text": "重置密码",
+            "to": "/reset-password"
+          }
+        ]
+      },
+      {
+        "title": "我的账户",
+        "links": [
+          {
+            "text": "仪表盘",
+            "to": "/dashboard"
+          },
+          {
+            "text": "角色管理",
+            "to": "/role-management"
+          },
+          {
+            "text": "启动器会话",
+            "to": "/launcher-sessions"
+          },
+          {
+            "text": "个人信息",
+            "to": "/profile"
+          }
+        ]
+      }
+    ],
+    "contact": {
+      "title": "联系我们",
+      "items": [
+        {
+          "text": "QQ 群：123456789",
+          "url": "https://qm.qq.com/"
+        },
+        {
+          "text": "GitHub",
+          "url": "https://github.com/"
+        },
+        {
+          "text": "support@example.com",
+          "url": "mailto:support@example.com"
+        }
+      ]
+    },
+    "friendLinks": {
+      "title": "友情链接",
+      "links": [
+        {
+          "text": "authlib-injector",
+          "url": "https://github.com/yushijinhun/authlib-injector"
+        },
+        {
+          "text": "Yggdrasil-Web",
+          "url": "https://github.com/"
+        }
+      ]
+    },
+    "bottom": {
+      "copyright": "Yggdrasil Web",
+      "icp": {
+        "text": "示例：请在 config.json 中填写备案号",
+        "url": "https://beian.miit.gov.cn/"
+      },
+      "poweredBy": "Powered by Yggdrasil-Web"
+    }
+  }
+}
