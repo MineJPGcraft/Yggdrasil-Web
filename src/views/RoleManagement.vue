@@ -1,15 +1,13 @@
 <script lang="ts" setup>
 import {computed, nextTick, onMounted, ref, watch} from 'vue' // 导入 watch
 import {
-  createLauncherSession,
   createYggdrasilProfile,
   deleteYggdrasilProfile,
   getProfileDetailsAPI,
   getYggdrasilProfiles,
   uploadTextureAPI,
-  yggdrasilAuthenticate,
 } from '@/api'
-import {parseTexturesProperty, parseUploadableTextures} from '@/lib/textures'
+import {parseTexturesProperty, parseUploadableTextures, toSameOriginUrl} from '@/lib/textures'
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from '@/components/ui/card'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table'
 import {Button} from '@/components/ui/button'
@@ -237,22 +235,7 @@ const handleFileChange = (event: Event, type: 'skin' | 'cape') => {
   }
 }
 
-/** 材质上传需要 Yggdrasil Bearer accessToken：
- *  1. 通过 Cookie 为选中角色创建启动器会话
- *  2. 用启动器会话凭据调用 authserver/authenticate 换取 accessToken */
-const getUploadAccessToken = async (): Promise<string> => {
-  if (!selectedProfile.value) {
-    throw new Error('请先选择一个角色。')
-  }
-  const session = await createLauncherSession(selectedProfile.value.id)
-  const auth = await yggdrasilAuthenticate({
-    username: session.username,
-    password: session.password,
-    requestUser: false
-  })
-  return auth.accessToken
-}
-
+/** 材质上传使用前端专属 Cookie 身份验证端点（PUT /yggdrasil/profiles/{uuid}/{textureType}），无需 Bearer accessToken */
 const handleUploadSkin = async () => {
   if (!selectedProfile.value) {
     uploadMessage.value = '请先选择一个角色。'
@@ -270,9 +253,8 @@ const handleUploadSkin = async () => {
   isUploadError.value = false
 
   try {
-    const accessToken = await getUploadAccessToken()
     const model = skinModel.value === 'slim' ? 'slim' as const : '' as const
-    await uploadTextureAPI(selectedProfile.value.id, 'skin', skinFile.value, model, accessToken)
+    await uploadTextureAPI(selectedProfile.value.id, 'skin', skinFile.value, model)
 
     uploadMessage.value = '皮肤上传成功！'
     // 重新获取选定角色的详情以更新预览
@@ -308,8 +290,7 @@ const handleUploadCape = async () => {
   isCapeError.value = false
 
   try {
-    const accessToken = await getUploadAccessToken()
-    await uploadTextureAPI(selectedProfile.value.id, 'cape', capeFile.value, '', accessToken)
+    await uploadTextureAPI(selectedProfile.value.id, 'cape', capeFile.value, '')
 
     capeMessage.value = '披风上传成功！'
     // 重新获取选定角色的详情以更新预览
@@ -358,7 +339,8 @@ watch(selectedProfile, async (newProfile) => { // watch 函数改为 async
       });
 
       console.log('SkinViewer 实例创建成功，尝试加载皮肤:', newProfile.skinUrl);
-      await skinViewerRef.value.loadSkin(newProfile.skinUrl); // 显式加载皮肤并 await
+      // 材质 URL 为跨源绝对地址，需转为同源相对 URL（经 /api 反代）以规避皮肤图片的 CORS 限制
+      await skinViewerRef.value.loadSkin(toSameOriginUrl(newProfile.skinUrl)); // 显式加载皮肤并 await
 
       // 设置模型
       const model = newProfile.skinModel === 'slim' ? 'slim' : 'default';

@@ -15,45 +15,38 @@ export const batchQueryProfiles = async (names: string[]): Promise<GameProfile[]
 };
 
 /**
- * 上传材质（需要 Yggdrasil Bearer accessToken）
- * PUT /yggdrasil/api/user/profile/{uuid}/{textureType}
+ * 上传材质（Cookie 身份验证，前端专用端点）
+ * PUT /yggdrasil/profiles/{uuid}/{textureType}
  * 成功返回 204
  */
 export const uploadTextureAPI = async (
     uuid: string,
     textureType: 'skin' | 'cape',
     file: File,
-    model: 'slim' | '' = '',
-    accessToken: string
+    model: 'slim' | '' = ''
 ): Promise<void> => {
     const formData = new FormData();
     formData.append('file', file);
     if (model) {
         formData.append('model', model);
     }
-    await http.put(`/yggdrasil/api/user/profile/${uuid}/${textureType}`, formData, {
+    await http.put(`/yggdrasil/profiles/${uuid}/${textureType}`, formData, {
         headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${accessToken}`
+            'Content-Type': 'multipart/form-data'
         }
     });
 };
 
 /**
- * 清除材质（需要 Yggdrasil Bearer accessToken）
- * DELETE /yggdrasil/api/user/profile/{uuid}/{textureType}
+ * 清除材质（Cookie 身份验证，前端专用端点）
+ * DELETE /yggdrasil/profiles/{uuid}/{textureType}
  * 成功返回 204
  */
 export const deleteTextureAPI = async (
     uuid: string,
-    textureType: 'skin' | 'cape',
-    accessToken: string
+    textureType: 'skin' | 'cape'
 ): Promise<void> => {
-    await http.delete(`/yggdrasil/api/user/profile/${uuid}/${textureType}`, {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        }
-    });
+    await http.delete(`/yggdrasil/profiles/${uuid}/${textureType}`);
 };
 
 // ============================================================

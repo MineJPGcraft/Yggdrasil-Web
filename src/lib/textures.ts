@@ -54,3 +54,27 @@ export function parseUploadableTextures(
     }
     return uploadableProp.value.split(',')
 }
+
+/**
+ * 将材质 URL 转为当前页面同源的相对 URL，用于皮肤预览。
+ *
+ * 后端返回的材质 URL 通常是跨源绝对地址（如 http://host:8080/api/yggdrasil/textures/{hash}），
+ * skinview3d 以 `crossOrigin='anonymous'` 方式加载图片，若后端未返回 CORS 头则加载失败、预览不显示。
+ * 由于后端材质与 API 同源，这里取其路径作为相对地址，经前端的 /api 反代即可同源加载，从而规避 CORS。
+ */
+export function toSameOriginUrl(url: string): string {
+    // 非绝对地址（相对路径）直接使用
+    if (!/^https?:\/\//i.test(url)) {
+        return url
+    }
+    try {
+        const parsed = new URL(url, window.location.origin)
+        // 同源绝对地址无需转换
+        if (parsed.origin === window.location.origin) {
+            return url
+        }
+        return parsed.pathname + parsed.search
+    } catch {
+        return url
+    }
+}
