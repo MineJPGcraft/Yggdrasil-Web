@@ -117,9 +117,10 @@ const handleLogin = () => {
   }
 };
 
-/** 点击 OIDC 提供商：跳转后端授权地址（302 → Provider） */
+/** 点击 OIDC 提供商：跳转后端授权地址（302 → Provider），回调地址携带登录后的回跳目标 */
 const handleOidcLogin = (providerId: string) => {
-  const redirectUri = `${window.location.origin}/oidc/callback`;
+  const after = getRedirectTarget();
+  const redirectUri = `${window.location.origin}/oidc/callback?after=${encodeURIComponent(after)}`;
   window.location.href = getOidcAuthorizeUrl(providerId, redirectUri);
 };
 </script>

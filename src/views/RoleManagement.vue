@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import {nextTick, onMounted, ref, watch} from 'vue' // 导入 watch
+import {computed, nextTick, onMounted, ref, watch} from 'vue' // 导入 watch
 import {
   createLauncherSession,
   createYggdrasilProfile,
@@ -59,6 +59,17 @@ const skinModel = ref('default') // 默认为 default
 const isUploadingSkin = ref(false)
 const uploadMessage = ref('')
 const isUploadError = ref(false)
+
+// 披风上传相关状态
+const capeFile = ref<File | null>(null)
+const isUploadingCape = ref(false)
+const capeMessage = ref('')
+const isCapeError = ref(false)
+
+// 材质上传能力（依据 uploadableTextures：skin,cape → 皮肤+披风；skin → 仅皮肤；空 → 不能上传）
+const canUpload = computed(() => (selectedProfile.value?.uploadableTextures.length ?? 0) > 0)
+const canUploadSkin = computed(() => selectedProfile.value?.uploadableTextures.includes('skin') ?? false)
+const canUploadCape = computed(() => selectedProfile.value?.uploadableTextures.includes('cape') ?? false)
 
 // SkinViewer 相关状态
 const skinViewerRef = ref<SkinViewer | null>(null)
@@ -195,20 +206,51 @@ const selectProfile = (profile: ProfileDetail) => {
   skinModel.value = 'default'
   uploadMessage.value = ''
   isUploadError.value = false
+  capeFile.value = null
+  capeMessage.value = ''
+  isCapeError.value = false
 }
 
-const handleFileChange = (event: Event) => {
+const handleFileChange = (event: Event, type: 'skin' | 'cape') => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file && file.type === 'image/png') {
-    skinFile.value = file
-    uploadMessage.value = ''
-    isUploadError.value = false
+    if (type === 'skin') {
+      skinFile.value = file
+      uploadMessage.value = ''
+      isUploadError.value = false
+    } else {
+      capeFile.value = file
+      capeMessage.value = ''
+      isCapeError.value = false
+    }
   } else {
-    skinFile.value = null
-    uploadMessage.value = '请选择一个 PNG 格式的图片文件。'
-    isUploadError.value = true
+    if (type === 'skin') {
+      skinFile.value = null
+      uploadMessage.value = '请选择一个 PNG 格式的图片文件。'
+      isUploadError.value = true
+    } else {
+      capeFile.value = null
+      capeMessage.value = '请选择一个 PNG 格式的图片文件。'
+      isCapeError.value = true
+    }
   }
+}
+
+/** 材质上传需要 Yggdrasil Bearer accessToken：
+ *  1. 通过 Cookie 为选中角色创建启动器会话
+ *  2. 用启动器会话凭据调用 authserver/authenticate 换取 accessToken */
+const getUploadAccessToken = async (): Promise<string> => {
+  if (!selectedProfile.value) {
+    throw new Error('请先选择一个角色。')
+  }
+  const session = await createLauncherSession(selectedProfile.value.id)
+  const auth = await yggdrasilAuthenticate({
+    username: session.username,
+    password: session.password,
+    requestUser: false
+  })
+  return auth.accessToken
 }
 
 const handleUploadSkin = async () => {
@@ -228,18 +270,9 @@ const handleUploadSkin = async () => {
   isUploadError.value = false
 
   try {
-    // 材质上传需要 Yggdrasil Bearer accessToken：
-    // 1. 通过 Cookie 为选中角色创建启动器会话
-    // 2. 用启动器会话凭据调用 authserver/authenticate 换取 accessToken
-    // 3. 用 accessToken 上传皮肤
-    const session = await createLauncherSession(selectedProfile.value.id)
-    const auth = await yggdrasilAuthenticate({
-      username: session.username,
-      password: session.password,
-      requestUser: false
-    })
+    const accessToken = await getUploadAccessToken()
     const model = skinModel.value === 'slim' ? 'slim' as const : '' as const
-    await uploadTextureAPI(selectedProfile.value.id, 'skin', skinFile.value, model, auth.accessToken)
+    await uploadTextureAPI(selectedProfile.value.id, 'skin', skinFile.value, model, accessToken)
 
     uploadMessage.value = '皮肤上传成功！'
     // 重新获取选定角色的详情以更新预览
@@ -255,6 +288,43 @@ const handleUploadSkin = async () => {
     isUploadError.value = true
   } finally {
     isUploadingSkin.value = false
+  }
+}
+
+const handleUploadCape = async () => {
+  if (!selectedProfile.value) {
+    capeMessage.value = '请先选择一个角色。'
+    isCapeError.value = true
+    return
+  }
+  if (!capeFile.value) {
+    capeMessage.value = '请选择要上传的披风文件。'
+    isCapeError.value = true
+    return
+  }
+
+  isUploadingCape.value = true
+  capeMessage.value = ''
+  isCapeError.value = false
+
+  try {
+    const accessToken = await getUploadAccessToken()
+    await uploadTextureAPI(selectedProfile.value.id, 'cape', capeFile.value, '', accessToken)
+
+    capeMessage.value = '披风上传成功！'
+    // 重新获取选定角色的详情以更新预览
+    await refreshProfileDetails(selectedProfile.value.id)
+    // 清空文件输入
+    const input = document.getElementById('cape-file') as HTMLInputElement | null
+    if (input) input.value = ''
+    capeFile.value = null
+  } catch (err) {
+    console.error('披风上传失败:', err)
+    const axiosErr = err as AxiosError<{ errorMessage?: string }>
+    capeMessage.value = axiosErr.response?.data?.errorMessage || '披风上传失败，请重试。'
+    isCapeError.value = true
+  } finally {
+    isUploadingCape.value = false
   }
 }
 
@@ -418,42 +488,67 @@ watch(selectedProfile, async (newProfile) => { // watch 函数改为 async
                 </div>
               </div>
 
-              <!-- 皮肤上传区 -->
-              <div v-if="selectedProfile.uploadableTextures.includes('skin')">
-                <h3 class="text-lg font-semibold mb-2">上传新皮肤</h3>
-                <p class="text-sm text-muted-foreground mb-4">
-                  支持 PNG 格式图片。
-                </p>
-                <div class="space-y-4">
-                  <div class="grid w-full max-w-sm items-center gap-1.5">
-                    <Label for="skin-file">选择皮肤文件 (.png)</Label>
-                    <Input id="skin-file" type="file" accept="image/png" @change="handleFileChange" />
+              <!-- 材质上传区（依据 uploadableTextures 决定皮肤/披风上传能力） -->
+              <div v-if="canUpload">
+                <!-- 皮肤上传 -->
+                <div v-if="canUploadSkin">
+                  <h3 class="text-lg font-semibold mb-2">上传新皮肤</h3>
+                  <p class="text-sm text-muted-foreground mb-4">
+                    支持 PNG 格式图片。
+                  </p>
+                  <div class="space-y-4">
+                    <div class="grid w-full max-w-sm items-center gap-1.5">
+                      <Label for="skin-file">选择皮肤文件 (.png)</Label>
+                      <Input id="skin-file" accept="image/png" type="file" @change="handleFileChange($event, 'skin')"/>
+                    </div>
+                    <div class="grid w-full max-w-sm items-center gap-1.5">
+                      <Label for="skin-model">皮肤模型</Label>
+                      <Select v-model="skinModel">
+                        <SelectTrigger class="w-[180px]">
+                          <SelectValue placeholder="选择皮肤模型"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>模型</SelectLabel>
+                            <SelectItem value="default">默认 (Steve)</SelectItem>
+                            <SelectItem value="slim">纤细 (Alex)</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div v-if="uploadMessage"
+                         :class="['text-sm font-medium', isUploadError ? 'text-destructive' : 'text-primary']">
+                      {{ uploadMessage }}
+                    </div>
+                    <Button :disabled="isUploadingSkin" class="w-full" @click="handleUploadSkin">
+                      {{ isUploadingSkin ? '正在上传...' : '上传皮肤' }}
+                    </Button>
                   </div>
-                  <div class="grid w-full max-w-sm items-center gap-1.5">
-                    <Label for="skin-model">皮肤模型</Label>
-                    <Select v-model="skinModel">
-                      <SelectTrigger class="w-[180px]">
-                        <SelectValue placeholder="选择皮肤模型" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>模型</SelectLabel>
-                          <SelectItem value="default">默认 (Steve)</SelectItem>
-                          <SelectItem value="slim">纤细 (Alex)</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                </div>
+
+                <!-- 披风上传 -->
+                <div v-if="canUploadCape" class="mt-6">
+                  <h3 class="text-lg font-semibold mb-2">上传新披风</h3>
+                  <p class="text-sm text-muted-foreground mb-4">
+                    支持 PNG 格式图片。
+                  </p>
+                  <div class="space-y-4">
+                    <div class="grid w-full max-w-sm items-center gap-1.5">
+                      <Label for="cape-file">选择披风文件 (.png)</Label>
+                      <Input id="cape-file" accept="image/png" type="file" @change="handleFileChange($event, 'cape')"/>
+                    </div>
+                    <div v-if="capeMessage"
+                         :class="['text-sm font-medium', isCapeError ? 'text-destructive' : 'text-primary']">
+                      {{ capeMessage }}
+                    </div>
+                    <Button :disabled="isUploadingCape" class="w-full" @click="handleUploadCape">
+                      {{ isUploadingCape ? '正在上传...' : '上传披风' }}
+                    </Button>
                   </div>
-                  <div v-if="uploadMessage" :class="['text-sm font-medium', isUploadError ? 'text-destructive' : 'text-primary']">
-                    {{ uploadMessage }}
-                  </div>
-                  <Button class="w-full" :disabled="isUploadingSkin" @click="handleUploadSkin">
-                    {{ isUploadingSkin ? '正在上传...' : '上传皮肤' }}
-                  </Button>
                 </div>
               </div>
               <div v-else>
-                <p class="text-muted-foreground">该角色不支持上传皮肤。</p>
+                <p class="text-muted-foreground">您不能上传材质。</p>
               </div>
             </div>
           </CardContent>
