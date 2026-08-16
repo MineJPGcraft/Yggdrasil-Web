@@ -6,6 +6,7 @@ import './themes/index.css'
 import App from './App.vue'
 import router from './router';
 import {loadSiteConfig} from './lib/siteConfig';
+import './composables/useTheme'; // 初始化主题：加载时即按存储/系统偏好应用 data-theme，避免首屏闪白
 
 declare module 'vue' {
     interface ComponentCustomProperties {

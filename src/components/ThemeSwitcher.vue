@@ -1,22 +1,13 @@
 <script lang="ts" setup>
-import {useStorage} from '@vueuse/core'
+import {useTheme} from '@/composables/useTheme'
+import {themeOptions} from '@/themes/themes'
 import {Button} from '@/components/ui/button'
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from '@/components/ui/dropdown-menu'
-import {themeOptions} from '@/themes/themes'
 
-const validThemes = themeOptions.map((theme) => theme.value)
-const currentTheme = useStorage('theme-preset', 'light')
+const {preset, setTheme} = useTheme()
 
-if (!validThemes.includes(currentTheme.value)) {
-  currentTheme.value = 'light'
-}
-
-document.documentElement.setAttribute('data-theme', currentTheme.value)
-
-const setTheme = (theme: string) => {
-  currentTheme.value = theme
-  document.documentElement.setAttribute('data-theme', theme)
-}
+// 手动选择主题时写 'light' / 'dark' / 'ocean'，与「跟随系统」区分
+const chooseTheme = (value: string) => setTheme(value as 'light' | 'dark' | 'ocean' | 'system')
 </script>
 
 <template>
@@ -41,12 +32,17 @@ const setTheme = (theme: string) => {
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
+      <!-- 跟随系统：按浏览器深浅色偏好自动切换 -->
+      <DropdownMenuItem :class="preset === 'system' ? 'font-semibold' : ''" @click="chooseTheme('system')">
+        跟随系统
+      </DropdownMenuItem>
       <DropdownMenuItem
-        v-for="theme in themeOptions"
-        :key="theme.value"
-        @click="setTheme(theme.value)"
+          v-for="option in themeOptions"
+          :key="option.value"
+          :class="preset === option.value ? 'font-semibold' : ''"
+          @click="chooseTheme(option.value)"
       >
-        {{ theme.label }}
+        {{ option.label }}
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
