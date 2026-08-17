@@ -118,18 +118,18 @@ export interface SiteConfig {
 /** 默认配置：config.json 缺失或部分字段缺失时的兜底 */
 const defaultConfig: SiteConfig = {
     seo: {
-        title: 'Yggdrasil Web',
-        description: 'Yggdrasil Web 是一个支持 Minecraft 外置登录（Yggdrasil / authlib-injector）的身份验证前端，提供注册、登录、角色与皮肤管理、启动器会话等功能。',
+        title: 'PlayerSystemWeb',
+        description: 'PlayerSystemWeb 是一个支持 Minecraft 外置登录（Yggdrasil / authlib-injector）的身份验证前端，提供注册、登录、角色与皮肤管理、启动器会话等功能。',
         keywords: ['Minecraft', '外置登录', 'Yggdrasil', 'authlib-injector']
     },
     brand: {
-        name: 'Yggdrasil Web',
+        name: 'PlayerSystemWeb',
         tagline: 'Minecraft 外置登录身份验证'
     },
     home: {
         hero: {
             badge: 'Minecraft 外置登录',
-            title: 'Yggdrasil',
+            title: 'PlayerSystem',
             titleHighlight: 'Web',
             description: 'Minecraft 外置登录（Yggdrasil / authlib-injector）身份验证前端，一站式管理您的账号、角色与皮肤。',
             primaryCta: {text: '立即注册', to: '/register'},
@@ -156,7 +156,7 @@ const defaultConfig: SiteConfig = {
         }
     },
     footer: {
-        about: 'Yggdrasil Web 是一个支持 Minecraft 外置登录（Yggdrasil / authlib-injector）的身份验证前端，提供注册、登录、角色与皮肤管理、启动器会话等功能。',
+        about: 'PlayerSystemWeb 是一个支持 Minecraft 外置登录（Yggdrasil / authlib-injector）的身份验证前端，提供注册、登录、角色与皮肤管理、启动器会话等功能。',
         columns: [
             {
                 title: '快速导航',
@@ -191,9 +191,9 @@ const defaultConfig: SiteConfig = {
             ]
         },
         bottom: {
-            copyright: 'Yggdrasil Web',
+            copyright: 'PlayerSystemWeb',
             icp: {text: '示例：请在 config.json 中填写备案号', url: 'https://beian.miit.gov.cn/'},
-            poweredBy: 'Powered by Yggdrasil-Web'
+            poweredBy: 'Powered by PlayerSystemWeb'
         }
     }
 }

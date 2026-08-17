@@ -1,5 +1,5 @@
 {
-  "name": "yggdrasil-web",
+  "name": "playersystemweb",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -7,17 +7,13 @@
     "dev": "vite --host ::",
     "build": "vue-tsc --noEmit && vite build",
     "type-check": "vue-tsc --noEmit",
-    "preview": "vite preview",
-    "start": "node ./dist/server.js"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@iarna/toml": "^2.2.5",
     "@vueuse/core": "^14.4.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "connect-history-api-fallback": "^2.0.0",
-    "express": "^5.1.0",
     "lucide-vue-next": "^0.569.0",
     "reka-ui": "^2.10.3",
     "skinview3d": "^3.4.1",

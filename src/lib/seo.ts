@@ -7,7 +7,7 @@ import {getSiteConfig} from './siteConfig'
 
 /** 站名：来自站点配置 brand.name */
 export function getSiteName(): string {
-    return getSiteConfig().brand.name.trim() || 'Yggdrasil Web'
+    return getSiteConfig().brand.name.trim() || 'PlayerSystemWeb'
 }
 
 /** 拼接页面标题：`页面名 - 站名`；页面名与站名相同时只显示站名 */

@@ -1,4 +1,4 @@
-# Yggdrasil-Web
+# PlayerSystemWeb
 
 用于对接 Yggdrasil 后端身份验证服务器前端实现。
 
@@ -37,8 +37,7 @@
 │   ├── themes/           # 主题系统
 │   └── main.ts           # 应用入口
 ├── public/
-│   ├── server.js         # Express 静态服务器（生产环境，端口 8081）
-│   ├── config.toml       # 服务器展示信息配置
+│   ├── config.json       # 站点展示信息配置（标题、首页、页脚等，运行时加载）
 │   └── 404.html          # 纯静态托管（GitHub Pages）的 SPA 回退
 └── vite.config.ts        # Vite 配置（@ 别名、/api 开发代理、manualChunks 分包）
 ```
@@ -73,7 +72,7 @@ VITE_API_BASE_URL=https://auth.example.com
 npm install
 npm run dev       # 开发服务器，默认代理到 VITE_DEV_API_PROXY_TARGET
 npm run build     # 类型检查 + 生产构建
-npm run preview   # 预览构建产物
+npm run preview   # 本地预览构建产物（纯静态）
 npm run type-check
 ```
 
@@ -125,110 +124,11 @@ npm run type-check
 
 ## 部署
 
-前端为纯静态 SPA，需配合**可访问的 Yggdrasil 认证后端**使用。以下两种部署方式任选其一。
+前端为纯静态 SPA（构建产物 `dist/` 为纯静态文件，不含任何 Node 服务端代码），
+可部署到任意静态托管（GitHub Pages、Nginx、Caddy、对象存储 CDN 等），
+需配合**可访问的 Yggdrasil 认证后端**使用。
 
-### 方式一：虚拟服务器部署（Node.js + Express）
-
-仓库自带的 `public/server.js` 是一个 Express 静态服务器（构建时复制到 `dist/`，端口 `8081`），
-可把前端直接托管在任意 VPS / 云服务器上。
-
-**1. 环境准备**
-
-安装 Node.js 20+（推荐 LTS）。
-
-**2. 获取代码并安装依赖**
-
-```bash
-git clone <你的仓库地址> Yggdrasil-Web
-cd Yggdrasil-Web
-npm install    # 仓库未提交 package-lock.json，勿用 npm ci
-```
-
-**3. 配置后端地址（构建期）**
-
-推荐**同域反代**：前端与后端共用域名，由 Nginx 把 `/api` 转发到后端。
-
-```bash
-echo "VITE_API_BASE_URL=/api" > .env.production
-```
-
-若后端有独立域名，则直接指向后端（后端需开启 CORS 并允许携带 Cookie）：
-
-```bash
-echo "VITE_API_BASE_URL=https://auth.example.com" > .env.production
-```
-
-**4. 构建**
-
-```bash
-npm run build
-```
-
-产物输出到 `dist/`，包含 `index.html`、静态资源、`server.js`、`config.toml` 与 `util/`。
-
-**5. 启动**
-
-```bash
-npm run start   # 等价于 node ./dist/server.js，监听 0.0.0.0:8081
-```
-
-生产环境建议使用进程守护，例如 PM2：
-
-```bash
-npm install -g pm2
-pm2 start "npm run start" --name yggdrasil-web
-pm2 save
-pm2 startup    # 按提示执行输出命令以开机自启
-```
-
-或使用 systemd（`/etc/systemd/system/yggdrasil-web.service`）：
-
-```ini
-[Unit]
-Description=Yggdrasil-Web
-After=network.target
-
-[Service]
-WorkingDirectory=/opt/Yggdrasil-Web
-ExecStart=/usr/bin/npm run start
-Restart=always
-User=www-data
-
-[Install]
-WantedBy=multi-user.target
-```
-
-**6. （可选）Nginx 反向代理 + HTTPS**
-
-以同域反代为例：前端监听 `8081`，后端认证服务监听 `8095`，通过 Nginx 统一对外提供 `443`：
-
-```nginx
-server {
-    listen 80;
-    server_name example.com;
-
-    # 后端认证服务（去掉 /api 前缀转发）
-    location /api/ {
-        rewrite ^/api/(.*)$ /$1 break;
-        proxy_pass http://127.0.0.1:8095;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-
-    # 前端静态页面
-    location / {
-        proxy_pass http://127.0.0.1:8081;
-        proxy_set_header Host $host;
-    }
-}
-```
-
-HTTPS 证书，配置完成后将 `location` 改到 `443`。
-
-> 注意：后端若使用 Cookie 会话，需确保反代透传 Cookie，且 HTTPS 下 `Set-Cookie` 的 `Secure` 属性正常。
-
-### 方式二：GitHub Pages 部署
+### GitHub Pages 部署
 
 GitHub Pages 是纯静态托管，**无法承载后端认证服务**，仅部署前端，并直连一个可公开访问的后端地址。
 
@@ -263,7 +163,7 @@ GitHub Pages 不识别 `history` 路由，刷新/直链 `/dashboard` 等深层�
 
 - 前端登录态依赖后端下发的 HttpOnly Cookie，因此后端必须允许跨域携带 Cookie
   （CORS 需显式允许凭证，且 `Access-Control-Allow-Origin` 不能是 `*`）。
-- 若后端不支持 CORS，则不要用 GitHub Pages 部署，请改用方式一（同域反代）。
+- 若后端不支持 CORS，则不要用 GitHub Pages 部署，请改用同域反代的静态托管方案（由 Nginx 等把 `/api` 转发到后端）。
 
 ## 常见问题
 
