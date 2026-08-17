@@ -11,7 +11,3 @@ setPageMeta(buildTitle(route.meta.title || '首页'))
 <template>
   <router-view />
 </template>
-
-<style>
-@import "style.css";
-</style>

@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import type {Component} from 'vue'
-import {onMounted, onUnmounted, ref} from 'vue'
+import {computed, onMounted, onUnmounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {Home, LayoutDashboard, LogIn, MonitorSmartphone, UserCircle, UserPlus, Users} from 'lucide-vue-next'
+import {Home, LayoutDashboard, LogIn, LogOut, MonitorSmartphone, UserCircle, UserPlus, Users} from 'lucide-vue-next'
 import {userLogout} from '@/api'
+import type {UserInfo} from '@/api'
 import {getSiteConfig} from '@/lib/siteConfig'
 import {
   Sidebar,
@@ -28,6 +29,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const route = useRoute()
@@ -36,30 +47,48 @@ const router = useRouter()
 const siteName = getSiteConfig().brand.name
 
 // 登录态以 localStorage 中的 userInfo 为标记（真实会话凭据为 HttpOnly Cookie）
-const isAuthenticated = ref(false)
-const checkAuth = () => {
-  isAuthenticated.value = !!localStorage.getItem('userInfo')
+const user = ref<UserInfo | null>(null)
+const isAuthenticated = computed(() => !!user.value)
+
+// 从 localStorage 解析登录用户信息（登录时由 Login / OIDC 回调写入）
+const refreshUser = () => {
+  const raw = localStorage.getItem('userInfo')
+  if (!raw) {
+    user.value = null
+    return
+  }
+  try {
+    user.value = JSON.parse(raw) as UserInfo
+  } catch {
+    user.value = null
+  }
 }
 
-const logout = async () => {
+// 头像占位字符：昵称首字符
+const avatarText = computed(() => user.value?.displayName?.trim().charAt(0).toUpperCase() || '用')
+
+// 登出确认弹窗
+const showLogoutDialog = ref(false)
+const confirmLogout = async () => {
   try {
     await userLogout()
   } catch (e) {
     console.error('登出失败:', e)
   } finally {
     localStorage.removeItem('userInfo')
-    checkAuth()
+    refreshUser()
+    showLogoutDialog.value = false
     router.push('/login')
   }
 }
 
 onMounted(() => {
-  checkAuth()
-  window.addEventListener('storage', checkAuth)
+  refreshUser()
+  window.addEventListener('storage', refreshUser)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('storage', checkAuth)
+  window.removeEventListener('storage', refreshUser)
 })
 
 interface SidebarLink {
@@ -145,20 +174,32 @@ const isActive = (path: string) => route.path === path
     </SidebarContent>
 
     <SidebarFooter>
-      <div class="flex items-center justify-between gap-2 px-1">
-        <ThemeSwitcher/>
+      <div
+          class="flex items-center justify-between gap-2 px-1 group-data-[collapsible=icon]:justify-center">
+        <!-- 主题切换（侧边栏折叠为图标时隐藏，给用户头像腾出空间） -->
+        <div class="group-data-[collapsible=icon]:hidden">
+          <ThemeSwitcher/>
+        </div>
         <!-- 已登录：用户菜单 -->
         <DropdownMenu v-if="isAuthenticated">
           <DropdownMenuTrigger as-child>
-            <Button class="h-8 gap-2 px-2" variant="ghost">
+            <Button
+                class="h-8 gap-2 px-2 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+                variant="ghost"
+            >
               <Avatar class="size-6">
-                <AvatarFallback class="text-xs">用户</AvatarFallback>
+                <AvatarFallback class="text-xs">{{ avatarText }}</AvatarFallback>
               </Avatar>
-              <span class="hidden text-sm lg:inline">我的账户</span>
+              <span class="max-w-28 truncate text-sm group-data-[collapsible=icon]:hidden">{{ user?.displayName || '我的账户' }}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="top">
-            <DropdownMenuLabel>我的账户</DropdownMenuLabel>
+          <DropdownMenuContent align="end" side="top" class="w-56">
+            <DropdownMenuLabel class="font-normal">
+              <div class="flex flex-col space-y-1">
+                <p class="text-sm font-medium leading-none text-foreground">{{ user?.displayName }}</p>
+                <p class="truncate text-xs leading-none text-muted-foreground">{{ user?.email || '未绑定邮箱' }}</p>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator/>
             <DropdownMenuItem as-child>
               <router-link to="/dashboard">仪表盘</router-link>
@@ -167,14 +208,39 @@ const isActive = (path: string) => route.path === path
               <router-link to="/profile">个人信息</router-link>
             </DropdownMenuItem>
             <DropdownMenuSeparator/>
-            <DropdownMenuItem @click="logout">
-              登出
+            <DropdownMenuItem
+                class="text-destructive focus:text-destructive focus:bg-destructive/10"
+                @click="showLogoutDialog = true"
+            >
+              <LogOut/>
+              退出登录
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <span v-else class="hidden text-xs text-muted-foreground lg:inline">未登录</span>
+        <span v-else class="hidden text-xs text-muted-foreground lg:inline group-data-[collapsible=icon]:hidden">未登录</span>
       </div>
     </SidebarFooter>
+
+    <!-- 登出确认弹窗 -->
+    <AlertDialog v-model:open="showLogoutDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>确认退出登录吗？</AlertDialogTitle>
+          <AlertDialogDescription>
+            退出后将清除本地登录状态，需要重新登录才能访问角色与皮肤等个人数据。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction
+              class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              @click="confirmLogout"
+          >
+            退出登录
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <SidebarRail/>
   </Sidebar>
