@@ -5,6 +5,8 @@ import {buildTitle, setPageMeta} from '@/lib/seo';
 declare module 'vue-router' {
     interface RouteMeta {
         requiresAuth?: boolean
+        /** 是否显示侧边栏布局（登录后的应用页面；Home 等公开页面不显示） */
+        sidebar?: boolean
         /** 页面标题（SEO，用于 afterEach 动态设置 document.title） */
         title?: string
     }
@@ -26,25 +28,25 @@ const routes: RouteRecordRaw[] = [
                 path: 'dashboard',
                 name: 'dashboard',
                 component: () => import('@/views/Dashboard.vue'),
-                meta: {requiresAuth: true, title: '仪表盘'}
+                meta: {requiresAuth: true, sidebar: true, title: '仪表盘'}
             },
             {
                 path: 'role-management',
                 name: 'role-management',
                 component: () => import('@/views/RoleManagement.vue'),
-                meta: {requiresAuth: true, title: '角色管理'}
+                meta: {requiresAuth: true, sidebar: true, title: '角色管理'}
             },
             {
                 path: 'launcher-sessions',
                 name: 'launcher-sessions',
                 component: () => import('@/views/LauncherSessions.vue'),
-                meta: {requiresAuth: true, title: '启动器会话'}
+                meta: {requiresAuth: true, sidebar: true, title: '启动器会话'}
             },
             {
                 path: 'profile',
                 name: 'user-profile',
                 component: () => import('@/views/UserProfile.vue'),
-                meta: {requiresAuth: true, title: '个人信息'}
+                meta: {requiresAuth: true, sidebar: true, title: '个人信息'}
             }
         ]
     },
